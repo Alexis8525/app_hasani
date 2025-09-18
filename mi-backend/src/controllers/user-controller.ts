@@ -8,18 +8,30 @@ export class UserController {
     try {
       console.log("📩 Datos recibidos:", req.body);
 
+      if (!UserModel.validateEmail(email)) {
+        return res.status(400).json({ message: 'Correo electrónico inválido' });
+      }
+
+      if (!UserModel.validatePasswordFormat(password)) {
+        return res.status(400).json({
+          message: 'Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial.'
+        });
+      }
+
       const existingUser = await UserModel.findByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: 'Usuario ya registrado' });
       }
 
       const user = await UserModel.create(email, password);
+
       res.status(201).json({ message: 'Usuario registrado', user });
     } catch (error: any) {
       console.error("❌ Error en crearUsuario:", error.message);
       res.status(500).json({ message: 'Error al registrar usuario', error: error.message });
     }
   }
+  
 
   static async getUsuarios(req: Request, res: Response) {
     try {
@@ -57,11 +69,18 @@ export class UserController {
     try {
       console.log("📩 Login request:", req.body);
   
+      // Validar email
+      if (!UserModel.validateEmail(email)) {
+        return res.status(400).json({ message: 'Correo electrónico inválido' });
+      }
+  
+      // Buscar usuario
       const user = await UserModel.findByEmail(email);
       console.log("👤 Usuario encontrado:", user);
   
       if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
   
+      // Comparar contraseña
       const valid = await bcrypt.compare(password, user.password);
       console.log("🔑 Contraseña válida?", valid);
   
@@ -72,6 +91,6 @@ export class UserController {
       console.error("❌ Error en login:", error);
       res.status(500).json({ message: 'Error al iniciar sesión', error: error.message });
     }
-  }
+  }  
   
 }

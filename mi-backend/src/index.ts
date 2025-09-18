@@ -5,6 +5,11 @@ import cors from 'cors';
 import { connectDB } from './config/db';
 import userRoutes from './routes/user-routes';
 
+// Swagger
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+
 class Server {
   public app: Application;
 
@@ -12,13 +17,11 @@ class Server {
     this.app = express();
     this.config();
     this.routes();
+    this.swaggerDocs(); // 👉 Swagger
   }
 
   config(): void {
-    // Puerto
     this.app.set('port', process.env.PORT || 3000);
-
-    // Middlewares
     this.app.use(express.json({ limit: '50mb' }));
     this.app.use(express.urlencoded({ limit: '50mb', extended: true }));
     this.app.use(morgan('dev'));
@@ -30,9 +33,21 @@ class Server {
     this.app.use('/api/users', userRoutes);
   }
 
+  swaggerDocs(): void {
+    const swaggerPath = path.join(__dirname, './docs/swagger.yaml');
+    const swaggerDocument = YAML.load(swaggerPath);
+
+    this.app.use(
+      '/api-docs',
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerDocument)
+    );
+
+    console.log(`📖 Swagger docs en http://localhost:${this.app.get('port')}/api-docs`);
+  }
+
   async start(): Promise<void> {
     try {
-      // Espera a que la DB esté conectada antes de iniciar el servidor
       await connectDB();
       console.log('✅ Conexión a la base de datos establecida con éxito');
 
@@ -46,6 +61,5 @@ class Server {
   }
 }
 
-// Inicializar servidor
 const server = new Server();
 server.start();

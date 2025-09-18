@@ -1,0 +1,94 @@
+openapi: 3.0.0
+info:
+  title: API de Usuarios
+  version: 1.0.0
+  description: API para listar y registrar usuarios
+servers:
+  - url: http://localhost:3000/api
+paths:
+  /users:
+    get:
+      summary: Lista todos los usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+                    email:
+                      type: string
+                    rol:
+                      type: string
+  /users/nuevo:
+    post:
+      summary: Crea un nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                rol:
+                  type: string
+                  enum: [admin, editor, lector]
+      responses:
+        '302':
+          description: Redirige a /users después de crear
+  /users/{id}:
+    put:
+      summary: Actualiza un usuario por ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID del usuario
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                email:
+                  type: string
+                rol:
+                  type: string
+                  enum: [admin, editor, lector]
+      responses:
+        '200':
+          description: Usuario actualizado
+        '404':
+          description: Usuario no encontrado
+    delete:
+      summary: Elimina un usuario por ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID del usuario
+      responses:
+        '200':
+          description: Usuario eliminado
+        '404':
+          description: Usuario no encontrado
