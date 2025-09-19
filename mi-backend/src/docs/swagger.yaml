@@ -1,10 +1,13 @@
 openapi: 3.0.0
 info:
-  title: API de Usuarios
+  title: API de Usuarios con Autenticación
   version: 1.0.0
-  description: API para listar y registrar usuarios
+  description: >
+    API para gestión de usuarios con login, 2FA, recuperación de credenciales
+    y administración de roles.
 servers:
   - url: http://localhost:3000/api
+
 paths:
   /users:
     get:
@@ -15,80 +18,275 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    nombre:
-                      type: string
-                    email:
-                      type: string
-                    rol:
-                      type: string
-  /users/nuevo:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        email: { type: string }
+                        role: { type: string }
+
     post:
-      summary: Crea un nuevo usuario
+      summary: Crear un nuevo usuario
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
+              required:
+                - email
+                - password
+                - role
               properties:
-                nombre:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                rol:
+                email: { type: string }
+                password: { type: string }
+                role: 
                   type: string
                   enum: [admin, editor, lector]
       responses:
-        '302':
-          description: Redirige a /users después de crear
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  user:
+                    type: object
+        '400':
+          description: Error al crear usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
   /users/{id}:
     put:
       summary: Actualiza un usuario por ID
       parameters:
         - in: path
           name: id
-          schema:
-            type: integer
           required: true
-          description: ID del usuario
+          schema: { type: integer }
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
-                nombre:
-                  type: string
-                email:
-                  type: string
-                rol:
+                email: { type: string }
+                password: { type: string }
+                role: 
                   type: string
                   enum: [admin, editor, lector]
       responses:
         '200':
           description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  user: { type: object }
         '404':
           description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
     delete:
       summary: Elimina un usuario por ID
       parameters:
         - in: path
           name: id
-          schema:
-            type: integer
           required: true
-          description: ID del usuario
+          schema: { type: integer }
       responses:
         '200':
           description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
         '404':
           description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+  /auth/login:
+    post:
+      summary: Login de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login exitoso o requiere 2FA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  requires2fa: { type: boolean }
+                  token: { type: string }
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+  /auth/2fa/verify:
+    post:
+      summary: Verifica código OTP del 2FA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tempToken, otp]
+              properties:
+                tempToken: { type: string }
+                otp: { type: string }
+      responses:
+        '200':
+          description: 2FA verificado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  token: { type: string }
+        '400':
+          description: OTP inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+  /auth/password-reset/request:
+    post:
+      summary: Solicitar restablecimiento de contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string }
+                via: 
+                  type: string
+                  enum: [email, sms]
+      responses:
+        '200':
+          description: Instrucciones enviadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+
+  /auth/password-reset/confirm:
+    post:
+      summary: Confirmar restablecimiento de contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                otp: { type: string }
+                email: { type: string }
+                newPassword: { type: string }
+      responses:
+        '200':
+          description: Contraseña cambiada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+        '400':
+          description: Token/OTP inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+  /auth/recover-username:
+    post:
+      summary: Recuperar nombre de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emailOrPhone]
+              properties:
+                emailOrPhone: { type: string }
+      responses:
+        '200':
+          description: Si existe, se envía username por email o SMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }

@@ -54,20 +54,28 @@ export class UserModel {
     return result.rows[0] || null;
   }
 
-  static async updateUsuario(id: number, password: string): Promise<IUser | null> {
-    if (!this.validatePasswordFormat(password)) {
-      throw new Error(
-        'Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial.'
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
+  static async updateUsuario(
+    id: number,
+    data: { email?: string; rol?: string; password?: string }
+  ): Promise<IUser | null> {
+    let hashedPassword = data.password
+      ? await bcrypt.hash(data.password, 10)
+      : undefined;
+  
     const result = await pool.query(
-      'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, email, created_at',
-      [hashedPassword, id]
+      `UPDATE users
+       SET 
+         email = COALESCE($1, email),
+         role = COALESCE($2, role),
+         password = COALESCE($3, password)
+       WHERE id = $4
+       RETURNING id, email, role, created_at`,
+      [data.email, data.rol, hashedPassword, id]
     );
+  
     return result.rows[0] || null;
-  }
+  }  
+  
 
   static async deleteUsuario(id: number): Promise<boolean> {
     const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);

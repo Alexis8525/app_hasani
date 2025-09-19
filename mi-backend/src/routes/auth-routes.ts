@@ -2,14 +2,23 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 
-const router = Router();
+class AuthRoutes {
+  public router: Router = Router();
 
-router.post('/login', AuthController.login);
-router.post('/2fa/verify', AuthController.verify2FA);
+  constructor() {
+    this.config();
+  }
 
-router.post('/password-reset/request', AuthController.requestPasswordReset);
-router.post('/password-reset/confirm', AuthController.confirmPasswordReset);
+  config() {
+    this.router.post('/login', AuthController.login);
+    this.router.post('/2fa/verify', AuthController.verify2FA);
 
-router.post('/recover-username', AuthController.recoverUsername);
+    this.router.post('/password-reset/request', AuthController.requestPasswordReset);
+    this.router.post('/password-reset/confirm', AuthController.confirmPasswordReset);
 
-export default router;
+    this.router.post('/recover-username', AuthController.recoverUsername);
+  }
+}
+
+const authRoutes = new AuthRoutes();
+export default authRoutes.router;

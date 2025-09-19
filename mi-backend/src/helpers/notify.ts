@@ -3,18 +3,20 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Configuración de correo (Gmail)
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: Number(process.env.EMAIL_PORT || 465),
+  secure: process.env.EMAIL_SECURE === 'true', // true para 465, false para 587
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // contraseña de aplicación
   },
 });
 
 export async function sendEmail(to: string, subject: string, html: string) {
   const info = await transporter.sendMail({
-    from: process.env.SMTP_USER,
+    from: `"Mi App" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
@@ -23,7 +25,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
   return info;
 }
 
-// opcional: Twilio SMS
+// Twilio SMS (opcional)
 import Twilio from 'twilio';
 const twilioClient = process.env.TWILIO_ACCOUNT_SID
   ? Twilio(process.env.TWILIO_ACCOUNT_SID as string, process.env.TWILIO_AUTH_TOKEN as string)

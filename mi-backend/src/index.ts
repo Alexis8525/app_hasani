@@ -4,7 +4,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import { connectDB } from './config/db';
 import userRoutes from './routes/user-routes';
-
+import authRoutes from './routes/auth-routes';
 // Swagger
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
@@ -31,6 +31,7 @@ class Server {
   routes(): void {
     this.app.get('/', (req, res) => res.send('¡Hola, mundo!'));
     this.app.use('/api/users', userRoutes);
+    this.app.use('/api/auth', authRoutes);
   }
 
   swaggerDocs(): void {
