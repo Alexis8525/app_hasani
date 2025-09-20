@@ -1,107 +1,134 @@
-// src/controllers/auth.controller.ts
 import { Request, Response } from 'express';
 import { pool } from '../config/db';
+import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { UserModel } from '../models/user.models';
 import { PasswordResetModel } from '../models/passwordReset.model';
-import { generateOTP, generateToken, hashToken } from '../helpers/security';
+import { generateOTP, generateTempToken, generateToken } from '../helpers/security';
 import { sendEmail, sendSMS } from '../helpers/notify';
 
 export class AuthController {
-  // Login inicial: si user.two_factor_enabled => generar OTP y pedir verificación
+
+  // Login 2FA
   static async login(req: Request, res: Response) {
     const { email, password } = req.body;
     try {
       const user = await UserModel.findByEmailFull(email);
       if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
-
-      const valid = await (await import('bcrypt')).compare(password, user.password);
+  
+      const valid = await bcrypt.compare(password, user.password);
       if (!valid) return res.status(401).json({ message: 'Credenciales inválidas' });
-
-      // Si usuario tiene 2FA habilitado -> generar OTP y guardar registro temporal
+  
       if (user.two_factor_enabled) {
         const otp = generateOTP(6);
-        const tempToken = crypto.randomBytes(32).toString('hex');
-        await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5); // 5 min TTL
-
-        // enviar OTP por email y/o SMS
-        await sendEmail(user.email, 'Tu código 2FA', `<p>Tu código: <b>${otp}</b></p>`);
-        if (user.phone) await sendSMS(user.phone, `Tu código 2FA: ${otp}`);
-
-        return res.status(200).json({ message: '2FA requerido', requires2fa: true, tempToken }); // tempToken se usa para identificar sesión en /2fa/verify
+  
+        // Generar token temporal y guardar **exactamente el mismo valor en DB**
+        const tempToken = generateTempToken({ id: user.id, type: '2fa' });
+  
+        await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 1); // 1 min de expiración
+  
+        // Notificar al usuario
+        if (user.email) {
+          await sendEmail(user.email, 'Tu código 2FA', `
+            <p>Tu código 2FA: <b>${otp}</b></p>
+            <p>Token temporal: <b>${tempToken}</b></p>
+            <p>Este código expira en 1 minuto</p>
+          `);
+        }
+        if (user.phone) {
+          await sendSMS(user.phone, `Tu código 2FA: ${otp}\nToken temporal: ${tempToken}`);
+        }
+  
+        return res.status(200).json({ message: '2FA requerido', requires2fa: true, tempToken });
       }
-
-      // si no hay 2FA -> emitir JWT acceso
+  
+      // Usuario sin 2FA
       const token = generateToken({ id: user.id, role: user.role });
-      res.json({ message: 'Login exitoso', token, user: { id: user.id, email: user.email, role: user.role } });
+      return res.json({
+        message: 'Login exitoso',
+        token,
+        user: { id: user.id, email: user.email, role: user.role }
+      });
+  
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error en login', error: err.message });
     }
   }
-
-  // Verificar 2FA: tempToken + otp
+  
+  // Verificar 2FA
   static async verify2FA(req: Request, res: Response) {
     const { tempToken, otp } = req.body;
     try {
+      console.log('TempToken recibido:', tempToken);
+      console.log('Tokens en DB:', await pool.query('SELECT token, expires_at FROM password_resets'));
+
+      // Buscar **el token exacto** en la DB
       const reset = await PasswordResetModel.findValidByToken(tempToken, '2fa');
-      if (!reset) return res.status(400).json({ message: 'Token 2FA inválido o expirado' });
+if (!reset) return res.status(400).json({ message: 'Token 2FA inválido o expirado' });
 
-      const byOtp = await PasswordResetModel.findValidByUserAndOtp(reset.user_id, otp, '2fa');
-      if (!byOtp) return res.status(400).json({ message: 'Código OTP inválido' });
+if (reset.otp_code !== otp) return res.status(400).json({ message: 'Código OTP inválido' });
 
-      // marcar usado
-      await PasswordResetModel.markUsed(reset.id);
+await PasswordResetModel.markUsed(reset.id);
 
-      const user = await UserModel.findById(reset.user_id);
-      const token = generateToken({ id: user!.id, role: user!.role });
-      res.json({ message: '2FA verificado', token, user: { id: user!.id, email: user!.email, role: user!.role } });
+const user = await UserModel.findById(reset.user_id);
+const token = generateToken({ id: user!.id, role: user!.role });
+
+res.json({
+  message: '2FA verificado',
+  token,
+  user: { id: user!.id, email: user!.email, role: user!.role }
+});
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error verificando 2FA', error: err.message });
     }
   }
+  
 
-  // Request password reset (envía link con token o OTP)
+  
+
   static async requestPasswordReset(req: Request, res: Response) {
-    const { email, via = 'email' } = req.body; // via: 'email' | 'sms'
+    const { email, via = 'email' } = req.body;
     try {
       const user = await UserModel.findByEmailFull(email);
-      if (!user) return res.status(200).json({ message: 'Si existe cuenta, se enviará un correo' }); // no revelar existencia
-
-      // token plano para link
+      if (!user) return res.status(200).json({ message: 'Si existe cuenta, se enviará un correo' });
+  
+      // Generar token seguro (plano)
       const tokenPlain = crypto.randomBytes(32).toString('hex');
+  
       const otp = via === 'sms' ? generateOTP(6) : undefined;
+  
+      // Guardar **el token plano tal cual** en la DB
       await PasswordResetModel.create(user.id, tokenPlain, 'reset', otp, 30);
-
+  
       if (via === 'email') {
         const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
         await sendEmail(user.email, 'Restablecer contraseña', `<p>Haz clic: <a href="${resetLink}">${resetLink}</a></p>`);
       } else if (via === 'sms' && user.phone) {
         await sendSMS(user.phone, `Código para restablecer: ${otp}`);
       } else {
-        // fallback a email
         const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
         await sendEmail(user.email, 'Restablecer contraseña', `<p>Haz clic: <a href="${resetLink}">${resetLink}</a></p>`);
       }
-
+  
       return res.json({ message: 'Si existe la cuenta, recibirás instrucciones para restablecer la contraseña' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error solicitando restablecimiento', error: err.message });
     }
   }
+  
 
-  // Confirm reset: token + nueva password OR user + otp + new password
   static async confirmPasswordReset(req: Request, res: Response) {
-    const { token, otp, newPassword } = req.body;
+    const { token, otp, newPassword, email } = req.body;
     try {
       let reset = null;
       if (token) {
         reset = await PasswordResetModel.findValidByToken(token, 'reset');
-      } else if (otp && req.body.email) {
-        // si usas OTP vía SMS: buscar user y validar OTP
-        const user = await UserModel.findByEmailFull(req.body.email);
+      } else if (otp && email) {
+        const user = await UserModel.findByEmailFull(email);
         if (!user) return res.status(400).json({ message: 'Datos inválidos' });
         reset = await PasswordResetModel.findValidByUserAndOtp(user.id, otp, 'reset');
       } else {
@@ -110,24 +137,21 @@ export class AuthController {
 
       if (!reset) return res.status(400).json({ message: 'Token/OTP inválido o expirado' });
 
-      // validar formato de contraseña con tu util actual
       if (!UserModel.validatePasswordFormat(newPassword)) {
         return res.status(400).json({ message: 'Formato de contraseña inválido' });
       }
 
-      // actualizar contraseña
-      const hashed = await (await import('bcrypt')).hash(newPassword, 10);
+      const hashed = await bcrypt.hash(newPassword, 10);
       await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashed, reset.user_id]);
       await PasswordResetModel.markUsed(reset.id);
 
-      res.json({ message: 'Contraseña restablecida correctamente' });
+      return res.json({ message: 'Contraseña restablecida correctamente' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error confirmando restablecimiento', error: err.message });
     }
   }
 
-  // Recuperación de username (por email o SMS)
   static async recoverUsername(req: Request, res: Response) {
     const { emailOrPhone } = req.body;
     try {
@@ -141,14 +165,14 @@ export class AuthController {
 
       if (!user) return res.status(200).json({ message: 'Si existe, recibirás la información' });
 
-      // enviar username por email o sms
       if (user.email) {
         await sendEmail(user.email, 'Recuperación de usuario', `<p>Tu usuario: <b>${user.email}</b></p>`);
       }
       if (user.phone) {
         await sendSMS(user.phone, `Tu usuario: ${user.email}`);
       }
-      res.json({ message: 'Si existe, recibirás la información' });
+
+      return res.json({ message: 'Si existe, recibirás la información' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error recuperando usuario', error: err.message });

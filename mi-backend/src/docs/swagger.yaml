@@ -20,8 +20,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  code:
-                    type: integer
+                  code: { type: integer }
                   data:
                     type: array
                     items:
@@ -30,6 +29,7 @@ paths:
                         id: { type: integer }
                         email: { type: string }
                         role: { type: string }
+                        phone: { type: string }
 
     post:
       summary: Crear un nuevo usuario
@@ -43,12 +43,14 @@ paths:
                 - email
                 - password
                 - role
+                - phone
               properties:
                 email: { type: string }
                 password: { type: string }
                 role: 
                   type: string
-                  enum: [admin, editor, lector]
+                  enum: [admin, editor, lector, user]
+                phone: { type: string }
       responses:
         '201':
           description: Usuario creado
@@ -90,7 +92,8 @@ paths:
                 password: { type: string }
                 role: 
                   type: string
-                  enum: [admin, editor, lector]
+                  enum: [admin, editor, lector, user]
+                phone: { type: string }
       responses:
         '200':
           description: Usuario actualizado

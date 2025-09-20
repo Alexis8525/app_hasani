@@ -5,13 +5,21 @@ dotenv.config();
 
 // Configuración de correo (Gmail)
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: Number(process.env.EMAIL_PORT || 465),
-  secure: process.env.EMAIL_SECURE === 'true', // true para 465, false para 587
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT),
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // contraseña de aplicación
-  },
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Error conexión SMTP:', error);
+  } else {
+    console.log('✅ Conexión SMTP correcta');
+  }
 });
 
 export async function sendEmail(to: string, subject: string, html: string) {

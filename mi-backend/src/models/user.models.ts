@@ -12,31 +12,51 @@ export interface IUser {
 }
 
 export class UserModel {
-  // Crear usuario
-  static async create(email: string, password: string): Promise<IUser> {
-    if (!this.validateEmail(email)) {
-      throw new Error('Correo electrónico inválido');
-    }
-
-    if (!this.validatePasswordFormat(password)) {
-      throw new Error(
-        'Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial.'
-      );
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-      'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email, hashedPassword]
-    );
-    return result.rows[0];
-  }
+  static allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'example.com'];
 
   static validateEmail(email: string): boolean {
     const regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    return regex.test(email);
+    if (!regex.test(email)) return false;
+
+    const domain = email.split('@')[1];
+    return this.allowedDomains.includes(domain);
   }
+
+  static validatePhone(phone: string): boolean {
+    const re = /^[0-9]{10,15}$/; // solo números, entre 10 y 15 dígitos
+    return re.test(phone);
+  }
+  
+  // Crear usuario
+  static async create(email: string, password: string, role: string, phone: string): Promise<IUser> {
+    if (!email || !password || !role || !phone) {
+      throw new Error('Email, contraseña, rol y teléfono son obligatorios');
+    }
+  
+    if (!this.validateEmail(email)) {
+      throw new Error('Correo electrónico inválido o dominio no permitido');
+    }
+  
+    const existing = await this.findByEmail(email);
+    if (existing) throw new Error('El correo ya existe');
+  
+    if (!this.validatePasswordFormat(password)) {
+      throw new Error('Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.');
+    }
+  
+    if (!this.validatePhone(phone)) {
+      throw new Error('Teléfono inválido');
+    }
+  
+    const hashedPassword = await bcrypt.hash(password, 10);
+  
+    const result = await pool.query(
+      'INSERT INTO users (email, password, role, phone) VALUES ($1, $2, $3, $4) RETURNING id, email, role, phone, created_at',
+      [email, hashedPassword, role, phone]
+    );
+  
+    return result.rows[0];
+  }  
 
   // Validar contraseña
   static validatePasswordFormat(password: string): boolean {
@@ -56,9 +76,23 @@ export class UserModel {
 
   static async updateUsuario(
     id: number,
-    data: { email?: string; rol?: string; password?: string }
+    data: { email?: string; role?: string; password?: string; phone?: string }
   ): Promise<IUser | null> {
-    let hashedPassword = data.password
+    if (data.email) {
+      if (!this.validateEmail(data.email)) {
+        throw new Error('Correo electrónico inválido o dominio no permitido');
+      }
+      const existing = await this.findByEmail(data.email);
+      if (existing && existing.id !== id) {
+        throw new Error('El correo ya existe');
+      }
+    }
+  
+    if (data.phone && !this.validatePhone(data.phone)) {
+      throw new Error('Teléfono inválido');
+    }
+  
+    const hashedPassword = data.password
       ? await bcrypt.hash(data.password, 10)
       : undefined;
   
@@ -67,23 +101,22 @@ export class UserModel {
        SET 
          email = COALESCE($1, email),
          role = COALESCE($2, role),
-         password = COALESCE($3, password)
-       WHERE id = $4
-       RETURNING id, email, role, created_at`,
-      [data.email, data.rol, hashedPassword, id]
+         password = COALESCE($3, password),
+         phone = COALESCE($4, phone)
+       WHERE id = $5
+       RETURNING id, email, role, phone, created_at`,
+      [data.email, data.role, hashedPassword, data.phone, id]
     );
   
     return result.rows[0] || null;
-  }  
-  
-
+  }
+   
   static async deleteUsuario(id: number): Promise<boolean> {
     const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);
     if (!result.rowCount) return false;
     return result.rowCount > 0;
   }
   
-
   static async validatePassword(email: string, password: string): Promise<IUser | null> {
     const user = await this.findByEmail(email);
     if (!user) return null;
