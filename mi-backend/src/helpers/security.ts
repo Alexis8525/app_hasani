@@ -21,13 +21,6 @@ export function generateTempToken(payload: object = {}): string {
 }
 
 /**
- * Hashea una contraseña.
- */
-export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 10);
-}
-
-/**
  * Genera un JWT para sesión normal.
  */
 export const generateToken = (
@@ -46,4 +39,10 @@ export function verifyJWT(token: string) {
   } catch (err) {
     return null; // token inválido o expirado
   }
+}
+
+// helpers/security.ts - Añade esta función
+export function extractJwtSignature(token: string): string {
+  const parts = token.split('.');
+  return parts[2]; // Retorna solo la parte de la firma
 }

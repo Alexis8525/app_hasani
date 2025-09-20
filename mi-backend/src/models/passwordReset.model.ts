@@ -21,20 +21,14 @@ export class PasswordResetModel {
     );
     return result.rows[0];
   }
-  
 
   static async findValidByToken(token: string, type: string) {
     const result = await pool.query(
-      `SELECT * FROM password_resets
-       WHERE token=$1 AND type=$2 AND used=false AND expires_at >= CURRENT_TIMESTAMP
-       LIMIT 1`,
+      `SELECT * FROM password_resets WHERE token=$1 AND type=$2 AND used=false AND expires_at>NOW() LIMIT 1`,
       [token, type]
     );
-    return result.rows[0] || null;
+    return result.rows[0] ?? null;
   }
-  
-  
-  
 
   static async markUsed(id: number) {
     await pool.query(`UPDATE password_resets SET used=true WHERE id=$1`, [id]);
@@ -47,4 +41,6 @@ export class PasswordResetModel {
     );
     return result.rows[0] || null;
   }
+
+  
 }
