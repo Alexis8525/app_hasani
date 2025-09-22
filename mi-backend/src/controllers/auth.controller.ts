@@ -26,7 +26,7 @@ static async login(req: Request, res: Response) {
       
         // Guardar en DB
         await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5, lat, lng, offlinePin);
-      
+
         // Notificaciones online
         try {
           if (user.email) {
@@ -81,6 +81,7 @@ static async login(req: Request, res: Response) {
   
       const user = await UserModel.findById(reset.user_id);
       const token = generateToken({ id: user!.id, role: user!.role });
+      
   
       res.json({
         message: '2FA verificado',
@@ -148,6 +149,7 @@ static async login(req: Request, res: Response) {
   
       // Guardar en DB
       await PasswordResetModel.create(user.id, tokenPlain, 'reset', otp, 30);
+      
   
       // Enviar correo o SMS
       const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
