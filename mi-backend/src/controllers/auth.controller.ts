@@ -135,8 +135,6 @@ static async login(req: Request, res: Response) {
       res.status(500).json({ message: 'Error verificando PIN offline', error: err.message });
     }
   }
-  
-  
 
   static async requestPasswordReset(req: Request, res: Response) {
     const { email, via = 'email' } = req.body;
@@ -165,8 +163,6 @@ static async login(req: Request, res: Response) {
       res.status(500).json({ message: 'Error solicitando restablecimiento', error: err.message });
     }
   }
-  
-  
 
   static async confirmPasswordReset(req: Request, res: Response) {
     const { token, newPassword } = req.body;
@@ -193,8 +189,6 @@ static async login(req: Request, res: Response) {
       res.status(500).json({ message: 'Error confirmando restablecimiento', error: err.message });
     }
   }
-  
-  
 
   static async recoverUsername(req: Request, res: Response) {
     const { emailOrPhone } = req.body;
