@@ -11,8 +11,8 @@ class UsuarioRoutes {
     config() {
         this.router.get('/', UserController.getUsuarios);         
         this.router.post('/', UserController.crearUsuario);       
-        this.router.put('/:id', UserController.updateUsuario);    
-        this.router.delete('/:id', UserController.deleteUsuario); 
+        this.router.put('/:email', UserController.updateUsuario);
+        this.router.delete('/:email', UserController.deleteUsuario);
         //this.router.post('/login', UserController.login);
     }
 }

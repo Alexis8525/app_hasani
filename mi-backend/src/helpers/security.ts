@@ -17,7 +17,7 @@ export function generateOTP(length = 6) {
  * Este mismo token se puede guardar en la DB tal cual.
  */
 export function generateTempToken(payload: object = {}): string {
-  return jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '4m' });
+  return jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '5m' });
 }
 
 /**

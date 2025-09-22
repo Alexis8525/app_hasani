@@ -71,21 +71,19 @@ export class UserController {
   
 
   static async updateUsuario(req: Request, res: Response) {
-    const { id } = req.params;
-    const { email, role, password, phone } = req.body; // recibir phone si quieres actualizarlo
+    const { email } = req.params; // ahora pasamos email en URL
+    const { newEmail, role, password, phone } = req.body;
   
     try {
-      const user = await UserModel.updateUsuario(Number(id), { email, role, password, phone });
+      const user = await UserModel.updateUsuarioByEmail(email, { newEmail, role, password, phone });
   
-      if (!user) {
-        return res.status(404).json({ code: 1, message: 'Usuario no encontrado' });
-      }
+      if (!user) return res.status(404).json({ code: 1, message: 'Usuario no encontrado' });
   
       res.json({ code: 0, message: 'Usuario actualizado', user });
     } catch (error: any) {
       res.status(500).json({ code: 1, message: 'Error al actualizar usuario', error: error.message });
     }
-  }  
+  } 
   
   static async getUsuarios(req: Request, res: Response) {
     try {
@@ -97,9 +95,10 @@ export class UserController {
   }
 
   static async deleteUsuario(req: Request, res: Response) {
-    const { id } = req.params;
+    const { email } = req.params;
+  
     try {
-      const deleted = await UserModel.deleteUsuario(Number(id));
+      const deleted = await UserModel.deleteUsuarioByEmail(email);
       if (!deleted) return res.status(404).json({ code: 1, message: 'Usuario no encontrado' });
       res.json({ code: 0, message: 'Usuario eliminado' });
     } catch (error: any) {

@@ -74,16 +74,19 @@ export class UserModel {
     return result.rows[0] || null;
   }
 
-  static async updateUsuario(
-    id: number,
-    data: { email?: string; role?: string; password?: string; phone?: string }
+  static async updateUsuarioByEmail(
+    email: string,
+    data: { newEmail?: string; role?: string; password?: string; phone?: string }
   ): Promise<IUser | null> {
-    if (data.email) {
-      if (!this.validateEmail(data.email)) {
+    const user = await this.findByEmail(email);
+    if (!user) return null;
+  
+    if (data.newEmail) {
+      if (!this.validateEmail(data.newEmail)) {
         throw new Error('Correo electrónico inválido o dominio no permitido');
       }
-      const existing = await this.findByEmail(data.email);
-      if (existing && existing.id !== id) {
+      const existing = await this.findByEmail(data.newEmail);
+      if (existing && existing.id !== user.id) {
         throw new Error('El correo ya existe');
       }
     }
@@ -92,9 +95,11 @@ export class UserModel {
       throw new Error('Teléfono inválido');
     }
   
-    const hashedPassword = data.password
-      ? await bcrypt.hash(data.password, 10)
-      : undefined;
+    if (data.password && !this.validatePasswordFormat(data.password)) {
+      throw new Error('Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.');
+    }
+  
+    const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : undefined;
   
     const result = await pool.query(
       `UPDATE users
@@ -103,18 +108,17 @@ export class UserModel {
          role = COALESCE($2, role),
          password = COALESCE($3, password),
          phone = COALESCE($4, phone)
-       WHERE id = $5
+       WHERE email = $5
        RETURNING id, email, role, phone, created_at`,
-      [data.email, data.role, hashedPassword, data.phone, id]
+      [data.newEmail, data.role, hashedPassword, data.phone, email]
     );
   
     return result.rows[0] || null;
   }
    
-  static async deleteUsuario(id: number): Promise<boolean> {
-    const result = await pool.query('DELETE FROM users WHERE id = $1', [id]);
-    if (!result.rowCount) return false;
-    return result.rowCount > 0;
+  static async deleteUsuarioByEmail(email: string): Promise<boolean> {
+    const result = await pool.query('DELETE FROM users WHERE email = $1', [email]);
+    return (result.rowCount ?? 0) > 0; // <-- corregido
   }
   
   static async validatePassword(email: string, password: string): Promise<IUser | null> {

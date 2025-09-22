@@ -73,74 +73,45 @@ paths:
                   code: { type: integer, example: 1 }
                   message: { type: string }
 
-  /users/{id}:
-    put:
-      summary: Actualiza un usuario por ID
-      parameters:
-        - in: path
-          name: id
+  /users/{email}:
+      put:
+        summary: Actualiza un usuario por correo electrónico
+        parameters:
+          - in: path
+            name: email
+            required: true
+            schema: { type: string }
+        requestBody:
           required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string }
-                password: { type: string }
-                role: 
-                  type: string
-                  enum: [admin, editor, lector, user]
-                phone: { type: string }
-      responses:
-        '200':
-          description: Usuario actualizado
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  code: { type: integer, example: 0 }
-                  message: { type: string }
-                  user: { type: object }
-        '404':
-          description: Usuario no encontrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 1 }
-                  message: { type: string }
+                  newEmail: { type: string }
+                  password: { type: string }
+                  role: 
+                    type: string
+                    enum: [admin, editor, lector, user]
+                  phone: { type: string }
+        responses:
+          '200':
+            description: Usuario actualizado
+          '404':
+            description: Usuario no encontrado
 
-    delete:
-      summary: Elimina un usuario por ID
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Usuario eliminado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 0 }
-                  message: { type: string }
-        '404':
-          description: Usuario no encontrado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code: { type: integer, example: 1 }
-                  message: { type: string }
+      delete:
+        summary: Elimina un usuario por correo electrónico
+        parameters:
+          - in: path
+            name: email
+            required: true
+            schema: { type: string }
+        responses:
+          '200':
+            description: Usuario eliminado
+          '404':
+            description: Usuario no encontrado
 
   /auth/login:
     post:
@@ -248,8 +219,6 @@ paths:
               type: object
               properties:
                 token: { type: string }
-                otp: { type: string }
-                email: { type: string }
                 newPassword: { type: string }
       responses:
         '200':
@@ -293,3 +262,57 @@ paths:
                 properties:
                   code: { type: integer, example: 0 }
                   message: { type: string }
+  
+  /auth/verify-offline:
+    post:
+      summary: Verifica PIN offline para login sin internet
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - offlinePin
+                - lat
+                - lng
+              properties:
+                userId:
+                  type: number
+                  example: 42
+                offlinePin:
+                  type: string
+                  example: "829705"
+                lat:
+                  type: number
+                  example: 19.4326
+                lng:
+                  type: number
+                  example: -99.1332
+      responses:
+        '200':
+          description: Login offline exitoso
+          content:
+            application/json:
+              example:
+                message: "Login offline exitoso"
+                token: "eyJhbGciOiJIUzI1NiIsIn..."
+                user:
+                  id: 42
+                  email: "usuario@mail.com"
+                  role: "admin"
+        '400':
+          description: PIN inválido o ubicación no coincide
+          content:
+            application/json:
+              example:
+                message: "PIN inválido o ubicación no coincide"
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              example:
+                message: "Error del servidor"
