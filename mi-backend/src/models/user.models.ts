@@ -1,3 +1,4 @@
+// models/user.models.ts
 import { pool } from '../config/db';
 import bcrypt from 'bcrypt';
 import QRCode from 'qrcode';
@@ -26,10 +27,10 @@ export class UserModel {
   }
 
   static validatePhone(phone: string): boolean {
-    const re = /^[0-9]{10,15}$/; // solo números, entre 10 y 15 dígitos
+    const re = /^[0-9]{10,15}$/;
     return re.test(phone);
   }
-  
+
   // Crear usuario
   static async create(email: string, password: string, role: string, phone: string): Promise<{user: IUser, offlinePin: string, qrCodeUrl: string}> {
     if (!email || !password || !role || !phone) {
@@ -54,7 +55,7 @@ export class UserModel {
     // Generar PIN offline seguro (6 dígitos)
     const offlinePin = this.generateOfflinePin();
     
-    // Generar secreto para TOTP (opcional, para futuras implementaciones)
+    // Generar secreto para TOTP
     const secret = speakeasy.generateSecret({
       name: `OfflineAuth (${email})`,
       length: 20
@@ -85,7 +86,7 @@ export class UserModel {
     await pool.query(
       `INSERT INTO password_resets (user_id, token, type, offline_pin, expires_at) 
        VALUES ($1, $2, $3, $4, $5)`,
-      [user.id, 'initial_setup', 'offline_setup', offlinePin, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)] // 30 días
+      [user.id, 'initial_setup', 'offline_setup', offlinePin, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)]
     );
 
     return {
@@ -95,14 +96,11 @@ export class UserModel {
     };
   }
 
-  
-
   static generateOfflinePin(): string {
-    // Generar PIN de 6 dígitos
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Nuevo método para validar PIN offline
+  // ✅ MANTÉN SOLO UNA VERSIÓN de validateOfflinePin
   static async validateOfflinePin(userId: number, pin: string): Promise<boolean> {
     const result = await pool.query(
       `SELECT * FROM password_resets 
@@ -111,8 +109,13 @@ export class UserModel {
       [userId, pin]
     );
     return result.rows.length > 0;
-  } 
-  
+  }
+
+  // ✅ ELIMINA esta función duplicada:
+  // static validateOfflinePin(pin: string): boolean {
+  //   const re = /^\d{6}$/;
+  //   return re.test(pin);
+  // }
 
   // Validar contraseña
   static validatePasswordFormat(password: string): boolean {
@@ -171,12 +174,12 @@ export class UserModel {
   
     return result.rows[0] || null;
   }
-   
+
   static async deleteUsuarioByEmail(email: string): Promise<boolean> {
     const result = await pool.query('DELETE FROM users WHERE email = $1', [email]);
-    return (result.rowCount ?? 0) > 0; // <-- corregido
+    return (result.rowCount ?? 0) > 0;
   }
-  
+
   static async validatePassword(email: string, password: string): Promise<IUser | null> {
     const user = await this.findByEmail(email);
     if (!user) return null;
@@ -186,12 +189,45 @@ export class UserModel {
   }
 
   static async findById(id: number): Promise<IUser | null> {
-    const result = await pool.query('SELECT id, email, role, phone, created_at, two_factor_enabled FROM users WHERE id=$1', [id]);
+    const result = await pool.query(
+      'SELECT id, email, role, phone, created_at, two_factor_enabled FROM users WHERE id=$1', 
+      [id]
+    );
     return result.rows[0] || null;
   }
-  
+
   static async findByEmailFull(email: string): Promise<any | null> {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0] || null;
+  }
+
+  // ✅ AÑADE estas nuevas validaciones (sin duplicar)
+  static validateRole(role: string): boolean {
+    const validRoles = ['admin', 'user', 'editor', 'lector'];
+    return validRoles.includes(role);
+  }
+
+  static validateOTP(otp: string): boolean {
+    const re = /^\d{6}$/;
+    return re.test(otp);
+  }
+
+  static validateToken(token: string): boolean {
+    return typeof token === 'string' && token.length > 10;
+  }
+
+  static validateCoordinates(lat: number, lng: number): boolean {
+    return (
+      typeof lat === 'number' && 
+      typeof lng === 'number' &&
+      lat >= -90 && lat <= 90 &&
+      lng >= -180 && lng <= 180
+    );
+  }
+
+  // ✅ Función auxiliar para validar formato de PIN (no confundir con validateOfflinePin)
+  static validatePinFormat(pin: string): boolean {
+    const re = /^\d{6}$/;
+    return re.test(pin);
   }
 }

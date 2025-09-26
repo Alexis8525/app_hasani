@@ -45,20 +45,38 @@ export class PasswordResetModel {
     return result.rows[0];
   }
 
-  static async verifyOffline(user_id: number, pin: string, latitude: number, longitude: number) {
-    const range = 0.01; // ±0.01 grados de tolerancia
+  static async verifyOffline(email: string, pin: string) {
+    console.log('🔐 Verificación offline para:', email, 'PIN:', pin);
+    
+    // Buscar usuario por email
+    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      console.log('❌ Usuario no encontrado');
+      return null;
+    }
+    
+    const userId = userResult.rows[0].id;
+    
+    // Buscar PIN offline válido
     const result = await pool.query(
-      `SELECT * FROM password_resets 
-       WHERE user_id=$1 
-         AND otp_code=$2 
-         AND used=false 
-         AND expires_at > NOW()
-         AND latitude BETWEEN $3 AND $4
-         AND longitude BETWEEN $5 AND $6
+      `SELECT pr.* 
+       FROM password_resets pr
+       WHERE pr.user_id = $1 
+         AND pr.offline_pin = $2 
+         AND pr.used = false 
+         AND pr.expires_at > NOW()
+       ORDER BY pr.created_at DESC 
        LIMIT 1`,
-      [user_id, pin, latitude - range, latitude + range, longitude - range, longitude + range]
+      [userId, pin]
     );
-    return result.rows[0] || null;
+    
+    if (result.rows.length > 0) {
+      console.log('✅ PIN offline válido encontrado');
+      return { ...result.rows[0], user_id: userId };
+    }
+    
+    console.log('❌ PIN offline inválido o expirado');
+    return null;
   }  
 
   static async findValidByTokenAndOtp(token: string, type: string, otp: string) {

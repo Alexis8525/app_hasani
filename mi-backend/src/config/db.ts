@@ -11,6 +11,10 @@ export const pool = new Pool({
   port: Number(process.env.DB_PORT),
 });
 
+pool.on('connect', (client) => {
+  client.query('SET timezone = UTC');
+});
+
 export const connectDB = async () => {
   try {
     const client = await pool.connect();

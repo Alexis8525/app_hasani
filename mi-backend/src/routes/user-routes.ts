@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/user-controller';
+import { EndpointValidators, ValidationMiddleware} from '../middleware/endpointValidators';
+import { GlobalValidationMiddleware } from '../middleware/globalValidation.middleware';
 
-class UsuarioRoutes {
+
+class UserRoutes {
     public router: Router = Router();
 
     constructor() {
@@ -9,18 +12,45 @@ class UsuarioRoutes {
     }
 
     config() {
-        this.router.get('/', UserController.getUsuarios);         
-        this.router.post('/', UserController.crearUsuario);      
-        this.router.put('/:email', UserController.updateUsuario);
+        // Aplicar middleware global a todas las rutas
+        this.router.use(ValidationMiddleware.sanitizeInput);
+        this.router.use(GlobalValidationMiddleware.validateJSONSyntax);
+
+        // GET /users - Listar todos los usuarios
+        this.router.get('/', UserController.getUsuarios);
+
+        this.router.post('/',
+            EndpointValidators.validateCreateUser,
+            UserController.crearUsuario
+        );
+
+        this.router.put('/:email',
+            EndpointValidators.validateUpdateUser,
+            UserController.updateUsuario
+        );
+
         this.router.delete('/:email', UserController.deleteUsuario);
-        this.router.post('/regenerate-offline-pin', UserController.regenerateOfflinePin);
-        this.router.post('/generate-offline-pin', UserController.generateOfflinePinForExistingUser);
+
+        this.router.post('/regenerate-offline-pin',
+            EndpointValidators.validateEmailRequired,
+            UserController.regenerateOfflinePin
+        );
+
+        this.router.post('/generate-offline-pin',
+            EndpointValidators.validateEmailRequired,
+            UserController.generateOfflinePinForExistingUser
+        );
+
         this.router.get('/:email/active-offline-pins', UserController.getActiveOfflinePins);
-        this.router.post('/revoke-offline-pin', UserController.revokeOfflinePin);
+
+        this.router.post('/revoke-offline-pin',
+            EndpointValidators.validateRevokePin,
+            UserController.revokeOfflinePin
+        );
+
         this.router.get('/qr-code', UserController.getQrCodeForPin);
-        //this.router.post('/login', UserController.login);
     }
 }
 
-const usuarioRoutes = new UsuarioRoutes();
-export default usuarioRoutes.router;
+const userRoutes = new UserRoutes();
+export default userRoutes.router;
