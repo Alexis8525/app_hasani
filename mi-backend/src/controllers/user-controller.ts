@@ -347,7 +347,7 @@ export class UserController {
     try {
       const user = await UserModel.updateUsuarioByEmail(email, { newEmail, role, password, phone });
   
-      if (!user) return res.status(404).json({ code: 1, message: 'Usuario no encontrado' });
+      if (!user) return res.status(404).json({ code: 1, message: 'Usuario no encontrado'});
   
       res.json({ code: 0, message: 'Usuario actualizado', user });
     } catch (error: any) {

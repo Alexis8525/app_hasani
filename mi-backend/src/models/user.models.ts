@@ -16,19 +16,26 @@ export interface IUser {
 }
 
 export class UserModel {
-  static allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'example.com'];
+  static allowedDomains = ['gmail.com', 'outlook.com', 'yahoo.com'];
 
-  static validateEmail(email: string): boolean {
+  static validateEmail(email: string): { valid: boolean; message?: string } {
+    if (!email) return { valid: false, message: 'El correo electrónico es obligatorio' };
+    
     const regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!regex.test(email)) return false;
+    if (!regex.test(email)) return { valid: false, message: 'Formato de correo inválido' };
 
     const domain = email.split('@')[1];
-    return this.allowedDomains.includes(domain);
+    if (!this.allowedDomains.includes(domain)) 
+      return { valid: false, message: `Dominio no permitido. Solo se aceptan: ${this.allowedDomains.join(', ')}` };
+
+    return { valid: true };
   }
 
-  static validatePhone(phone: string): boolean {
+  static validatePhone(phone: string): { valid: boolean; message?: string } {
+    if (!phone) return { valid: false, message: 'El teléfono es obligatorio' };
     const re = /^[0-9]{10,15}$/;
-    return re.test(phone);
+    if (!re.test(phone)) return { valid: false, message: 'Teléfono inválido. Debe tener entre 10 y 15 dígitos' };
+    return { valid: true };
   }
 
   // Crear usuario
@@ -110,17 +117,15 @@ export class UserModel {
     );
     return result.rows.length > 0;
   }
-
-  // ✅ ELIMINA esta función duplicada:
-  // static validateOfflinePin(pin: string): boolean {
-  //   const re = /^\d{6}$/;
-  //   return re.test(pin);
-  // }
-
-  // Validar contraseña
-  static validatePasswordFormat(password: string): boolean {
+  static validatePasswordFormat(password: string): { valid: boolean; message?: string } {
+    if (!password) return { valid: false, message: 'La contraseña es obligatoria' };
     const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>/?]).{8,}$/;
-    return re.test(password);
+    if (!re.test(password))
+      return { 
+        valid: false, 
+        message: 'Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial.' 
+      };
+    return { valid: true };
   }
 
   static async getUsuarios(): Promise<IUser[]> {
@@ -202,32 +207,32 @@ export class UserModel {
   }
 
   // ✅ AÑADE estas nuevas validaciones (sin duplicar)
-  static validateRole(role: string): boolean {
+  static validateRole(role: string): { valid: boolean; message?: string } {
     const validRoles = ['admin', 'user', 'editor', 'lector'];
-    return validRoles.includes(role);
+    if (!validRoles.includes(role)) return { valid: false, message: `Rol inválido. Debe ser uno de: ${validRoles.join(', ')}` };
+    return { valid: true };
   }
 
-  static validateOTP(otp: string): boolean {
+  static validateOTP(otp: string): { valid: boolean; message?: string } {
     const re = /^\d{6}$/;
-    return re.test(otp);
+    if (!re.test(otp)) return { valid: false, message: 'OTP inválido. Debe tener 6 dígitos' };
+    return { valid: true };
   }
 
-  static validateToken(token: string): boolean {
-    return typeof token === 'string' && token.length > 10;
+  static validateToken(token: string): { valid: boolean; message?: string } {
+    if (!token || token.length <= 10) return { valid: false, message: 'Token inválido o muy corto' };
+    return { valid: true };
   }
 
-  static validateCoordinates(lat: number, lng: number): boolean {
-    return (
-      typeof lat === 'number' && 
-      typeof lng === 'number' &&
-      lat >= -90 && lat <= 90 &&
-      lng >= -180 && lng <= 180
-    );
+  static validateCoordinates(lat: number, lng: number): { valid: boolean; message?: string } {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return { valid: false, message: 'Coordenadas deben ser números' };
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { valid: false, message: 'Coordenadas fuera de rango' };
+    return { valid: true };
   }
 
-  // ✅ Función auxiliar para validar formato de PIN (no confundir con validateOfflinePin)
-  static validatePinFormat(pin: string): boolean {
+  static validatePinFormat(pin: string): { valid: boolean; message?: string } {
     const re = /^\d{6}$/;
-    return re.test(pin);
+    if (!re.test(pin)) return { valid: false, message: 'PIN inválido. Debe tener 6 dígitos' };
+    return { valid: true };
   }
 }

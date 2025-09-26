@@ -241,12 +241,11 @@ export class AuthController {
       
       const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
       if (via === 'email') {
-        await sendEmail(user.email, 'Restablecer contraseña', `<p>Haz clic: <a href="${resetLink}">${resetLink}</a></p>`);
+        await sendEmail(user.email, 'Restablecer contraseña', `<p>Este es tu token= <a>${tokenPlain} </a></p>`);
       } else if (via === 'sms' && user.phone) {
         await sendSMS(user.phone, `Código para restablecer: ${otp}`);
       }
-  
-      return res.json({ message: 'Si existe la cuenta, recibirás instrucciones para restablecer la contraseña' });
+      return res.json({ message: 'Recibirás instrucciones para restablecer la contraseña' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error solicitando restablecimiento', error: err.message });

@@ -28,20 +28,6 @@ paths:
                 password: 
                   type: string
                   example: "Password123!"
-                lat:
-                  type: number
-                  format: float
-                  example: 19.4326
-                lng:
-                  type: number
-                  format: float
-                  example: -99.1332
-                device_info:
-                  type: string
-                  example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                ip_address:
-                  type: string
-                  example: "192.168.1.100"
       responses:
         '200':
           description: Login exitoso o requiere 2FA
@@ -109,16 +95,6 @@ paths:
                   type: string
                   example: "123456"
                   description: "Código OTP de 6 dígitos"
-                device_info:
-                  type: string
-                ip_address:
-                  type: string
-                lat:
-                  type: number
-                  format: float
-                lng:
-                  type: number
-                  format: float
       responses:
         '200':
           description: 2FA verificado exitosamente
@@ -170,16 +146,6 @@ paths:
                   type: string
                   example: "829705"
                   description: "PIN offline de 6 dígitos"
-                device_info:
-                  type: string
-                ip_address:
-                  type: string
-                lat:
-                  type: number
-                  format: float
-                lng:
-                  type: number
-                  format: float
       responses:
         '200':
           description: Login offline exitoso
@@ -353,7 +319,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  message: { type: string, example: "Si existe la cuenta, recibirás instrucciones para restablecer la contraseña" }
+                  message: { type: string, example: "Recibirás instrucciones para restablecer la contraseña" }
 
   /auth/password-reset/confirm:
     post:
@@ -460,7 +426,7 @@ paths:
                   example: "Password123!"
                 role: 
                   type: string
-                  enum: [admin, user, editor, lector]
+                  enum: [admin, user]
                   example: user
                 phone: 
                   type: string
@@ -511,7 +477,7 @@ paths:
                   type: string
                 role: 
                   type: string
-                  enum: [admin, editor, lector, user]
+                  enum: [admin, user]
                 phone: 
                   type: string
       responses:
@@ -532,7 +498,7 @@ paths:
                       role: { type: string }
                       phone: { type: string }
         '404':
-          description: Usuario no encontrado
+          description: Ingresa correctamente el usuario
           content:
             application/json:
               schema:
@@ -564,7 +530,7 @@ paths:
                   code: { type: integer, example: 0 }
                   message: { type: string }
         '404':
-          description: Usuario no encontrado
+          description: Ingresa correctamente el usuario
           content:
             application/json:
               schema:
@@ -706,7 +672,7 @@ components:
           format: email
         role:
           type: string
-          enum: [admin, user, editor, lector]
+          enum: [admin, user]
         phone:
           type: string
         created_at:
