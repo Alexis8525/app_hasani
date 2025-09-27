@@ -1,0 +1,731 @@
+openapi: 3.0.0
+info:
+  title: API de Usuarios con Autenticación y Gestión de Sesiones
+  version: 1.0.0
+  description: >
+    API para gestión de usuarios con login, 2FA, recuperación de credenciales,
+    gestión de sesiones y administración de roles.
+servers:
+  - url: http://localhost:3000/api
+
+paths:
+  /auth/login:
+    post:
+      summary: Iniciar sesión de usuario
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: 
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                password: 
+                  type: string
+                  example: "Password123!"
+      responses:
+        '200':
+          description: Login exitoso o requiere 2FA
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      message: 
+                        type: string
+                        example: "Login exitoso"
+                      token: 
+                        type: string
+                      user:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          email: { type: string }
+                          role: { type: string }
+                      session:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          created_at: { type: string }
+                          expires_at: { type: string }
+                  - type: object
+                    properties:
+                      message: 
+                        type: string
+                        example: "2FA requerido"
+                      requires2fa: 
+                        type: boolean
+                        example: true
+                      tempToken: 
+                        type: string
+                      offlinePin: 
+                        type: string
+                        example: "829705"
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Credenciales inválidas" }
+
+  /auth/verify-2fa:
+    post:
+      summary: Verificar código 2FA
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tempToken, otp]
+              properties:
+                tempToken: 
+                  type: string
+                  description: "Token temporal recibido en el login"
+                otp: 
+                  type: string
+                  example: "123456"
+                  description: "Código OTP de 6 dígitos"
+      responses:
+        '200':
+          description: 2FA verificado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "2FA verificado" }
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      role: { type: string }
+                  session:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      created_at: { type: string }
+                      expires_at: { type: string }
+        '400':
+          description: Token o código 2FA inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Token o código 2FA inválido o expirado" }
+
+  /auth/verify-offline:
+    post:
+      summary: Verificar PIN offline para login sin internet
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, offlinePin]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                offlinePin:
+                  type: string
+                  example: "829705"
+                  description: "PIN offline de 6 dígitos"
+      responses:
+        '200':
+          description: Login offline exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Login offline exitoso" }
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      role: { type: string }
+                  session:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      created_at: { type: string }
+                      expires_at: { type: string }
+                      session_type: { type: string, example: "offline" }
+        '400':
+          description: PIN inválido o expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "PIN offline inválido o expirado" }
+
+  /auth/logout:
+    post:
+      summary: Cerrar sesión actual
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Sesión cerrada exitosamente" }
+
+  /auth/refresh-token:
+    post:
+      summary: Renovar token de acceso
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token renovado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Token renovado" }
+                  token: { type: string }
+                  expires_at: { type: string }
+
+  /auth/sessions:
+    get:
+      summary: Obtener sesiones activas del usuario
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de sesiones activas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        device_info: { type: string }
+                        ip_address: { type: string }
+                        created_at: { type: string }
+                        last_activity: { type: string }
+                        expires_at: { type: string }
+                        location:
+                          type: object
+                          properties:
+                            lat: { type: number }
+                            lng: { type: number }
+                  total: { type: integer }
+
+  /auth/sessions/logout-others:
+    post:
+      summary: Cerrar todas las sesiones excepto la actual
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Otras sesiones cerradas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Otras sesiones cerradas exitosamente" }
+
+  /auth/sessions/{sessionId}:
+    delete:
+      summary: Cerrar una sesión específica
+      tags: [Sessions]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Sesión cerrada exitosamente" }
+        '404':
+          description: Sesión no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Sesión no encontrada" }
+
+  /auth/password-reset/request:
+    post:
+      summary: Solicitar restablecimiento de contraseña
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: 
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                via: 
+                  type: string
+                  enum: [email, sms]
+                  default: email
+      responses:
+        '200':
+          description: Instrucciones enviadas si la cuenta existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Recibirás instrucciones para restablecer la contraseña" }
+
+  /auth/password-reset/confirm:
+    post:
+      summary: Confirmar restablecimiento de contraseña
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: 
+                  type: string
+                  description: "Token de restablecimiento"
+                newPassword: 
+                  type: string
+                  example: "NuevaPassword123!"
+      responses:
+        '200':
+          description: Contraseña restablecida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Contraseña restablecida correctamente" }
+        '400':
+          description: Token inválido o contraseña no cumple requisitos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+
+  /auth/recover-username:
+    post:
+      summary: Recuperar nombre de usuario
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emailOrPhone]
+              properties:
+                emailOrPhone: 
+                  type: string
+                  description: "Email o número de teléfono"
+                  example: "usuario@ejemplo.com o 1234567890"
+      responses:
+        '200':
+          description: Si existe, se envía username por email o SMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Si existe, recibirás la información" }
+
+  /users:
+    get:
+      summary: Listar todos los usuarios
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    email: { type: string }
+                    created_at: { type: string }
+
+    post:
+      summary: Crear un nuevo usuario
+      tags: [Users]
+      description: >
+        Crea un nuevo usuario y genera un PIN offline con código QR para autenticación sin conexión.
+        El PIN y QR se envían por email y también se devuelven en la respuesta (solo para desarrollo).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, role, phone]
+              properties:
+                email: 
+                  type: string
+                  format: email
+                  example: "usuario@ejemplo.com"
+                password: 
+                  type: string
+                  example: "Password123!"
+                role: 
+                  type: string
+                  enum: [admin, user]
+                  example: user
+                phone: 
+                  type: string
+                  example: "1234567890"
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Usuario registrado exitosamente" }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      role: { type: string }
+                      phone: { type: string }
+                  offlinePin: { type: string }
+                  qrCodeUrl: { type: string }
+
+  /users/{email}:
+    put:
+      summary: Actualizar usuario por email
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema: 
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newEmail: 
+                  type: string
+                  format: email
+                password: 
+                  type: string
+                role: 
+                  type: string
+                  enum: [admin, user]
+                phone: 
+                  type: string
+      responses:
+        '200':
+          description: Usuario actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  user: 
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      role: { type: string }
+                      phone: { type: string }
+        '404':
+          description: Ingresa correctamente el usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+    delete:
+      summary: Eliminar usuario por email
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema: 
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Usuario eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+        '404':
+          description: Ingresa correctamente el usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 1 }
+                  message: { type: string }
+
+  /users/generate-offline-pin:
+    post:
+      summary: Generar PIN offline para usuario existente
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      description: Genera un nuevo PIN offline con QR code para un usuario ya registrado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: 
+                  type: string
+                  format: email
+                  example: "usuario_existente@ejemplo.com"
+      responses:
+        '200':
+          description: PIN offline generado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                      role: { type: string }
+                  offlinePin: { type: string }
+                  qrCodeUrl: { type: string }
+                  expiresAt: { type: string }
+        '404':
+          description: Usuario no encontrado
+        '400':
+          description: El usuario ya tiene un PIN activo
+
+  /users/{email}/active-pins:
+    get:
+      summary: Obtener PINs offline activos de un usuario
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema: 
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Lista de PINs activos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string }
+                  activePins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        offline_pin: { type: string }
+                        created_at: { type: string }
+                        expires_at: { type: string }
+                  totalActive: { type: integer }
+
+  /users/revoke-offline-pin:
+    post:
+      summary: Revocar (invalidar) un PIN offline
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, pin]
+              properties:
+                email: 
+                  type: string
+                  format: email
+                pin: 
+                  type: string
+                  example: "829705"
+      responses:
+        '200':
+          description: PIN revocado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+                  revokedPin: { type: string }
+        '404':
+          description: PIN no encontrado o ya revocado
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user]
+        phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        two_factor_enabled:
+          type: boolean
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        device_info:
+          type: string
+        ip_address:
+          type: string
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        last_activity:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1
+        message:
+          type: string
+        error:
+          type: string
+
+tags:
+  - name: Auth
+    description: Endpoints de autenticación y autorización
+  - name: Users
+    description: Gestión de usuarios
+  - name: Sessions
+    description: Gestión de sesiones de usuario
+    
