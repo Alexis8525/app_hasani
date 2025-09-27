@@ -76,7 +76,7 @@ paths:
                 properties:
                   message: { type: string, example: "Credenciales inválidas" }
 
-  /auth/verify-2fa:
+  /auth/2fa/verify:
     post:
       summary: Verificar código 2FA
       tags: [Auth]
