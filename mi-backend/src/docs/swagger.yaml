@@ -702,7 +702,7 @@ paths:
                   example: "Juan Pérez"
                 telefono:
                   type: string
-                  example: "+1234567890"
+                  example: "1234567890"
                 contacto:
                   type: string
                   example: "María García"
@@ -947,7 +947,7 @@ paths:
                   example: "Proveedor XYZ"
                 telefono:
                   type: string
-                  example: "+1234567890"
+                  example: "1234567890"
                 contacto:
                   type: string
                   example: "Carlos López"
@@ -1795,7 +1795,7 @@ components:
           example: "Juan Pérez"
         telefono:
           type: string
-          example: "+1234567890"
+          example: "1234567890"
         contacto:
           type: string
           example: "María García"
@@ -1813,7 +1813,7 @@ components:
           example: "Proveedor ABC"
         telefono:
           type: string
-          example: "+1234567890"
+          example: "1234567890"
         contacto:
           type: string
           example: "Carlos López"
