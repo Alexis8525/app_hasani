@@ -58,10 +58,10 @@ class Server {
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/clientes', clienteRoutes);
-  this.app.use('/api/proveedores', proveedorRoutes);
-  this.app.use('/api/productos', productoRoutes);
-  this.app.use('/api/movimientos', movimientoRoutes);
-  this.app.use('/api/bitacora', bitacoraRoutes);
+    this.app.use('/api/proveedores', proveedorRoutes);
+    this.app.use('/api/productos', productoRoutes);
+    this.app.use('/api/movimientos', movimientoRoutes);
+    this.app.use('/api/bitacora', bitacoraRoutes);
   }
 
   handleErrors(): void {

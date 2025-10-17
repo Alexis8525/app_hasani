@@ -15,10 +15,10 @@ class MovimientoRoutes {
     this.router.use(GlobalValidationMiddleware.validateJSONSyntax);
 
     this.router.get('/', MovimientoController.getAll);
-    this.router.get('/:id', MovimientoController.getById);
+    this.router.post('/buscar', MovimientoController.getById);
     this.router.post('/', MovimientoController.create);
-    this.router.get('/producto/:productoId', MovimientoController.getByProducto);
-    this.router.get('/report/date-range', MovimientoController.getByDateRange);
+    this.router.post('/producto', MovimientoController.getByProducto);
+    this.router.post('/report/date-range', MovimientoController.getByDateRange);
   }
 }
 

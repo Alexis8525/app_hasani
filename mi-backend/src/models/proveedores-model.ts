@@ -1,3 +1,4 @@
+// src/models/proveedores-model.ts
 import { Pool } from 'pg';
 
 export interface Proveedor {
@@ -15,36 +16,35 @@ export class ProveedorModel {
   }
 
   async findAll(): Promise<Proveedor[]> {
-    const result = await this.pool.query('SELECT * FROM proveedores ORDER BY id_proveedor DESC');
+    const result = await this.pool.query('SELECT * FROM proveedores ORDER BY nombre ASC');
     return result.rows;
   }
 
-  async findById(id: number): Promise<Proveedor | null> {
-    const result = await this.pool.query('SELECT * FROM proveedores WHERE id_proveedor = $1', [id]);
+  async findByNombre(nombre: string): Promise<Proveedor | null> {
+    const result = await this.pool.query('SELECT * FROM proveedores WHERE nombre = $1', [nombre]);
     return result.rows[0] || null;
   }
 
   async create(proveedor: Omit<Proveedor, 'id_proveedor'>): Promise<Proveedor> {
     const { nombre, telefono, contacto } = proveedor;
     const result = await this.pool.query(
-      'INSERT INTO proveedores (nombre, telefono, contacto) VALUES ($1, $2, $3) RETURNING *',
+      'INSERT INTO proveedores (nombre, telefono, contacto) VALUES ($1,$2,$3) RETURNING *',
       [nombre, telefono, contacto]
     );
     return result.rows[0];
   }
 
-  async update(id: number, proveedor: Partial<Omit<Proveedor, 'id_proveedor'>>): Promise<Proveedor | null> {
-    const { nombre, telefono, contacto } = proveedor;
+  async update(nombre: string, proveedor: Partial<Omit<Proveedor, 'id_proveedor'>>): Promise<Proveedor | null> {
+    const { telefono, contacto } = proveedor;
     const result = await this.pool.query(
-      'UPDATE proveedores SET nombre = COALESCE($1, nombre), telefono = COALESCE($2, telefono), contacto = COALESCE($3, contacto) WHERE id_proveedor = $4 RETURNING *',
-      [nombre, telefono, contacto, id]
+      'UPDATE proveedores SET telefono = COALESCE($1, telefono), contacto = COALESCE($2, contacto) WHERE nombre = $3 RETURNING *',
+      [telefono, contacto, nombre]
     );
     return result.rows[0] || null;
   }
 
-  async delete(id: number): Promise<boolean> {
-    const result = await this.pool.query('DELETE FROM proveedores WHERE id_proveedor = $1', [id]);
+  async delete(nombre: string): Promise<boolean> {
+    const result = await this.pool.query('DELETE FROM proveedores WHERE nombre = $1', [nombre]);
     return (result.rowCount ?? 0) > 0;
   }
-  
 }

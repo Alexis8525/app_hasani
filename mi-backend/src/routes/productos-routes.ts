@@ -15,10 +15,10 @@ class ProductoRoutes {
     this.router.use(GlobalValidationMiddleware.validateJSONSyntax);
 
     this.router.get('/', ProductoController.getAll);
-    this.router.get('/:id', ProductoController.getById);
+    this.router.post('/buscar', ProductoController.getByNombre);
     this.router.post('/', ProductoController.create);
-    this.router.put('/:id', ProductoController.update);
-    this.router.delete('/:id', ProductoController.delete);
+    this.router.put('/', ProductoController.update); // Sin parámetro en la ruta
+    this.router.delete('/', ProductoController.delete); // Sin parámetro en la ruta
     this.router.get('/inventory/low-stock', ProductoController.getLowStock);
   }
 }

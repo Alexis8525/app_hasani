@@ -15,10 +15,10 @@ class ProveedorRoutes {
     this.router.use(GlobalValidationMiddleware.validateJSONSyntax);
 
     this.router.get('/', ProveedorController.getAll);
-    this.router.get('/:id', ProveedorController.getById);
+    this.router.post('/buscar', ProveedorController.getByNombre);
     this.router.post('/', ProveedorController.create);
-    this.router.put('/:id', ProveedorController.update);
-    this.router.delete('/:id', ProveedorController.delete);
+    this.router.put('/', ProveedorController.update);
+    this.router.delete('/', ProveedorController.delete);
   }
 }
 

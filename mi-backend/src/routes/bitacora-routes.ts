@@ -16,8 +16,8 @@ class BitacoraRoutes {
 
     this.router.get('/', BitacoraController.getAll);
     this.router.post('/', BitacoraController.create);
-    this.router.get('/movimiento/:movimientoId', BitacoraController.getByMovimiento);
-    this.router.get('/proveedor/:proveedorId', BitacoraController.getByProveedor);
+    this.router.post('/movimiento', BitacoraController.getByMovimiento);
+    this.router.post('/proveedor', BitacoraController.getByProveedor);
   }
 }
 

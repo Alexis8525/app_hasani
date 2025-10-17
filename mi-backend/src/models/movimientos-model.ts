@@ -1,4 +1,6 @@
+// src/models/movimientos-model.ts
 import { Pool } from 'pg';
+import { ProductoModel } from './productos-model';
 
 export interface Movimiento {
   id_movimiento: number;
@@ -14,14 +16,16 @@ export interface Movimiento {
 
 export class MovimientoModel {
   private pool: Pool;
+  private productoModel: ProductoModel;
 
   constructor(pool: Pool) {
     this.pool = pool;
+    this.productoModel = new ProductoModel(pool);
   }
 
   async findAll(): Promise<Movimiento[]> {
     const result = await this.pool.query(`
-      SELECT m.*, p.nombre as producto_nombre, u.username as responsable_nombre, c.nombre as cliente_nombre
+      SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
       FROM movimientos m
       JOIN productos p ON m.id_producto = p.id_producto
       JOIN users u ON m.responsable = u.id
@@ -33,7 +37,7 @@ export class MovimientoModel {
 
   async findById(id: number): Promise<Movimiento | null> {
     const result = await this.pool.query(`
-      SELECT m.*, p.nombre as producto_nombre, u.username as responsable_nombre, c.nombre as cliente_nombre
+      SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
       FROM movimientos m
       JOIN productos p ON m.id_producto = p.id_producto
       JOIN users u ON m.responsable = u.id
@@ -53,22 +57,27 @@ export class MovimientoModel {
     return result.rows[0];
   }
 
-  async findByProducto(id_producto: number): Promise<Movimiento[]> {
+  // Nuevo método: buscar movimientos por nombre del producto
+  async findByProductoNombre(nombreProducto: string): Promise<Movimiento[]> {
+    const producto = await this.productoModel.findByNombre(nombreProducto);
+    if (!producto) return [];
+
     const result = await this.pool.query(`
-      SELECT m.*, p.nombre as producto_nombre, u.username as responsable_nombre, c.nombre as cliente_nombre
+      SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
       FROM movimientos m
       JOIN productos p ON m.id_producto = p.id_producto
       JOIN users u ON m.responsable = u.id
       LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
       WHERE m.id_producto = $1
       ORDER BY m.fecha DESC
-    `, [id_producto]);
+    `, [producto.id_producto]);
+
     return result.rows;
   }
 
   async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<Movimiento[]> {
     const result = await this.pool.query(`
-      SELECT m.*, p.nombre as producto_nombre, u.username as responsable_nombre, c.nombre as cliente_nombre
+      SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
       FROM movimientos m
       JOIN productos p ON m.id_producto = p.id_producto
       JOIN users u ON m.responsable = u.id
@@ -76,6 +85,7 @@ export class MovimientoModel {
       WHERE m.fecha BETWEEN $1 AND $2
       ORDER BY m.fecha DESC
     `, [fechaInicio, fechaFin]);
+
     return result.rows;
   }
 }

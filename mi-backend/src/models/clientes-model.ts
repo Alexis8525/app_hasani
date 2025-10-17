@@ -1,3 +1,4 @@
+// src/models/clientes-model.ts
 import { Pool } from 'pg';
 
 export interface Cliente {
@@ -16,12 +17,12 @@ export class ClienteModel {
   }
 
   async findAll(): Promise<Cliente[]> {
-    const result = await this.pool.query('SELECT * FROM clientes ORDER BY id_cliente DESC');
+    const result = await this.pool.query('SELECT * FROM clientes ORDER BY nombre ASC');
     return result.rows;
   }
 
-  async findById(id: number): Promise<Cliente | null> {
-    const result = await this.pool.query('SELECT * FROM clientes WHERE id_cliente = $1', [id]);
+  async findByNombre(nombre: string): Promise<Cliente | null> {
+    const result = await this.pool.query('SELECT * FROM clientes WHERE nombre = $1', [nombre]);
     return result.rows[0] || null;
   }
 
@@ -34,23 +35,22 @@ export class ClienteModel {
     return result.rows[0];
   }
 
-  async update(id: number, cliente: Partial<Omit<Cliente, 'id_cliente'>>): Promise<Cliente | null> {
-    const { nombre, telefono, contacto } = cliente;
+  async update(nombre: string, cliente: Partial<Omit<Cliente, 'id_cliente'>>): Promise<Cliente | null> {
+    const { telefono, contacto } = cliente;
     const result = await this.pool.query(
-      'UPDATE clientes SET nombre = COALESCE($1, nombre), telefono = COALESCE($2, telefono), contacto = COALESCE($3, contacto) WHERE id_cliente = $4 RETURNING *',
-      [nombre, telefono, contacto, id]
+      'UPDATE clientes SET telefono = COALESCE($1, telefono), contacto = COALESCE($2, contacto) WHERE nombre = $3 RETURNING *',
+      [telefono, contacto, nombre]
     );
     return result.rows[0] || null;
   }
 
-  async delete(id: number): Promise<boolean> {
-    const result = await this.pool.query('DELETE FROM clientes WHERE id_cliente = $1', [id]);
-    return (result.rowCount ?? 0) > 0; // <-- aquí se corrige
+  async delete(nombre: string): Promise<boolean> {
+    const result = await this.pool.query('DELETE FROM clientes WHERE nombre = $1', [nombre]);
+    return (result.rowCount ?? 0) > 0;
   }
-  
 
   async findByUserId(id_user: number): Promise<Cliente[]> {
-    const result = await this.pool.query('SELECT * FROM clientes WHERE id_user = $1 ORDER BY id_cliente DESC', [id_user]);
+    const result = await this.pool.query('SELECT * FROM clientes WHERE id_user = $1 ORDER BY nombre ASC', [id_user]);
     return result.rows;
   }
 }

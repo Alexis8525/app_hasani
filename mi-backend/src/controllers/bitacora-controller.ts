@@ -1,3 +1,4 @@
+// src/controllers/bitacora-controller.ts
 import { Request, Response } from 'express';
 import { BitacoraModel, Bitacora } from '../models/bitacora-model';
 import { pool } from '../config/db';
@@ -54,7 +55,17 @@ export const BitacoraController = {
 
   async getByMovimiento(req: Request, res: Response) {
     try {
-      const id_movimiento = parseInt(req.params.movimientoId);
+      // Cambiar de params a body
+      const { movimientoId } = req.body;
+      
+      if (!movimientoId) {
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo movimientoId es obligatorio en el body'
+        });
+      }
+
+      const id_movimiento = parseInt(movimientoId);
       const registros = await bitacoraModel.findByMovimiento(id_movimiento);
       
       res.json({
@@ -72,7 +83,17 @@ export const BitacoraController = {
 
   async getByProveedor(req: Request, res: Response) {
     try {
-      const id_proveedor = parseInt(req.params.proveedorId);
+      // Cambiar de params a body
+      const { proveedorId } = req.body;
+      
+      if (!proveedorId) {
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo proveedorId es obligatorio en el body'
+        });
+      }
+
+      const id_proveedor = parseInt(proveedorId);
       const registros = await bitacoraModel.findByProveedor(id_proveedor);
       
       res.json({
