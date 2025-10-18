@@ -1,6 +1,9 @@
 // src/models/movimientos-model.ts
 import { Pool } from 'pg';
 import { ProductoModel } from './productos-model';
+import { StockAlertService } from '../helpers/stock-alerts';
+
+
 
 export interface Movimiento {
   id_movimiento: number;
@@ -17,11 +20,14 @@ export interface Movimiento {
 export class MovimientoModel {
   private pool: Pool;
   private productoModel: ProductoModel;
+  private stockAlertService: StockAlertService;
 
   constructor(pool: Pool) {
     this.pool = pool;
     this.productoModel = new ProductoModel(pool);
+    this.stockAlertService = new StockAlertService(pool);
   }
+  
 
   async findAll(): Promise<Movimiento[]> {
     try {
@@ -66,10 +72,14 @@ export class MovimientoModel {
   }
 
   async create(movimiento: Omit<Movimiento, 'id_movimiento' | 'fecha' | 'created_at'>): Promise<Movimiento> {
+    const client = await this.pool.connect();
+    
     try {
+      await client.query('BEGIN');
+      
       const { tipo, id_producto, cantidad, referencia, responsable, id_cliente } = movimiento;
 
-      // Validaciones de campos obligatorios
+      // Validaciones existentes...
       if (!tipo) {
         throw new Error('El tipo es obligatorio');
       }
@@ -86,7 +96,6 @@ export class MovimientoModel {
         throw new Error('El responsable es obligatorio y debe ser mayor a 0');
       }
 
-      // Validaciones de formato y rangos
       if (!['Entrada', 'Salida'].includes(tipo)) {
         throw new Error('El tipo debe ser "Entrada" o "Salida"');
       }
@@ -107,7 +116,25 @@ export class MovimientoModel {
         throw new Error('El ID del cliente debe ser mayor a 0');
       }
 
-      const result = await this.pool.query(
+      // 1. Obtener el stock actual del producto
+      const productoResult = await client.query(
+        'SELECT stock_actual FROM productos WHERE id_producto = $1',
+        [id_producto]
+      );
+
+      if (productoResult.rows.length === 0) {
+        throw new Error('Producto no encontrado');
+      }
+
+      const stockActual = productoResult.rows[0].stock_actual;
+
+      // 2. Verificar que para salidas haya suficiente stock
+      if (tipo === 'Salida' && stockActual < cantidad) {
+        throw new Error(`Stock insuficiente. Stock actual: ${stockActual}, Cantidad solicitada: ${cantidad}`);
+      }
+
+      // 3. Crear el movimiento
+      const result = await client.query(
         `INSERT INTO movimientos (tipo, id_producto, cantidad, referencia, responsable, id_cliente) 
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [tipo, id_producto, cantidad, referencia, responsable, id_cliente]
@@ -117,13 +144,35 @@ export class MovimientoModel {
         throw new Error('No se pudo crear el movimiento en la base de datos');
       }
 
-      return result.rows[0];
+      const movimientoCreado = result.rows[0];
+
+      // 4. Actualizar el stock del producto
+      const nuevoStock = tipo === 'Entrada' 
+        ? stockActual + cantidad 
+        : stockActual - cantidad;
+
+      await client.query(
+        'UPDATE productos SET stock_actual = $1, updated_at = NOW() WHERE id_producto = $2',
+        [nuevoStock, id_producto]
+      );
+
+      // 5. VERIFICAR ALERTA DE STOCK (NUEVA FUNCIONALIDAD)
+      await this.stockAlertService.verificarAlertaStock(id_producto, cantidad, tipo);
+
+      await client.query('COMMIT');
+      
+      return movimientoCreado;
+      
     } catch (error: any) {
+      await client.query('ROLLBACK');
       throw new Error(`Error al crear movimiento: ${error.message}`);
+    } finally {
+      client.release();
     }
   }
 
-  async findByProductoNombre(nombreProducto: string): Promise<Movimiento[]> {
+
+  async findByProductoNombre(nombreProducto: string): Promise<Movimiento[] | { mensaje: string, data: Movimiento[] }> {
     try {
       if (!nombreProducto || nombreProducto.trim().length === 0) {
         throw new Error('El nombre del producto no puede estar vacío');
@@ -133,26 +182,51 @@ export class MovimientoModel {
         throw new Error('El nombre del producto no puede tener más de 100 caracteres');
       }
 
-      const producto = await this.productoModel.findByNombre(nombreProducto);
-      if (!producto) {
-        throw new Error('Producto no encontrado');
+      // Búsqueda con LIKE para coincidencias parciales
+      const productos = await this.productoModel.findByNombre(nombreProducto);
+      
+      if (!productos || productos.length === 0) {
+        throw new Error('No se encontraron productos con ese nombre');
       }
 
-      const result = await this.pool.query(`
-        SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
-        FROM movimientos m
-        JOIN productos p ON m.id_producto = p.id_producto
-        JOIN users u ON m.responsable = u.id
-        LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
-        WHERE m.id_producto = $1
-        ORDER BY m.fecha DESC
-      `, [producto.id_producto]);
+      // Si encontramos múltiples productos, buscamos movimientos para todos ellos
+      let movimientos: Movimiento[] = [];
+      
+      for (const producto of productos) {
+        const result = await this.pool.query(`
+          SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
+          FROM movimientos m
+          JOIN productos p ON m.id_producto = p.id_producto
+          JOIN users u ON m.responsable = u.id
+          LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
+          WHERE m.id_producto = $1
+          ORDER BY m.fecha DESC
+        `, [producto.id_producto]);
 
-      if (!result.rows) {
-        throw new Error('Error al consultar movimientos del producto');
+        if (result.rows && result.rows.length > 0) {
+          movimientos = movimientos.concat(result.rows);
+        }
       }
 
-      return result.rows;
+      if (movimientos.length === 0) {
+        // Si no hay movimientos para los productos encontrados
+        if (productos.length === 1) {
+          return {
+            mensaje: `No se encontraron movimientos para el producto "${nombreProducto}"`,
+            data: []
+          };
+        } else {
+          return {
+            mensaje: `No se encontraron movimientos para los productos relacionados con "${nombreProducto}"`,
+            data: []
+          };
+        }
+      }
+
+      // Ordenar todos los movimientos por fecha descendente
+      movimientos.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+      return movimientos;
     } catch (error: any) {
       throw new Error(`Error al buscar movimientos por nombre de producto: ${error.message}`);
     }

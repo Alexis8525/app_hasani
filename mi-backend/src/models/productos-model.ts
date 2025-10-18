@@ -41,28 +41,49 @@ export class ProductoModel {
     }
   }
 
-  async findByNombre(nombre: string): Promise<Producto | null> {
-    try {
-      if (!nombre || nombre.trim().length === 0) {
-        throw new Error('El nombre no puede estar vacío');
-      }
+  // En el modelo de productos
+async findByNombre(nombre: string): Promise<Producto[] | null> {
+  try {
+    if (!nombre || nombre.trim().length === 0) {
+      throw new Error('El nombre no puede estar vacío');
+    }
 
-      if (nombre.length > 100) {
-        throw new Error('El nombre no puede tener más de 100 caracteres');
-      }
+    if (nombre.length > 100) {
+      throw new Error('El nombre no puede tener más de 100 caracteres');
+    }
 
-      const result = await this.pool.query(`
+    // Búsqueda con LIKE para coincidencias parciales
+    const result = await this.pool.query(`
+      SELECT p.*, pr.nombre as nombre_proveedor 
+      FROM productos p 
+      LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor 
+      WHERE p.nombre ILIKE $1
+      ORDER BY p.nombre ASC
+    `, [`%${nombre}%`]);
+    
+    if (result.rows.length === 0) {
+      // Si no encuentra coincidencias, devuelve todos los productos con un mensaje
+      const allProducts = await this.pool.query(`
         SELECT p.*, pr.nombre as nombre_proveedor 
         FROM productos p 
         LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor 
-        WHERE p.nombre = $1
-      `, [nombre]);
+        ORDER BY p.nombre ASC
+      `);
       
-      return result.rows[0] || null;
-    } catch (error: any) {
-      throw new Error(`Error al buscar producto por nombre: ${error.message}`);
+      if (!allProducts.rows || allProducts.rows.length === 0) {
+        throw new Error('No hay productos registrados en el sistema');
+      }
+      
+      // Devolvemos los productos pero indicamos que fue una búsqueda sin resultados específicos
+      // El controlador manejará el mensaje apropiado
+      return allProducts.rows;
     }
+    
+    return result.rows;
+  } catch (error: any) {
+    throw new Error(`Error al buscar producto por nombre: ${error.message}`);
   }
+}
 
   async create(producto: Omit<Producto, 'id_producto' | 'created_at' | 'updated_at'>): Promise<Producto> {
     try {

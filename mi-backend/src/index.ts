@@ -15,6 +15,8 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { GlobalValidationMiddleware } from './middleware/globalValidation.middleware';
+import './jobs/stock-alert-job';
+
 
 class Server {
   public app: Application;
@@ -23,7 +25,7 @@ class Server {
     this.app = express();
     this.config();
     this.routes();
-    this.swaggerDocs(); // 👉 Swagger
+    this.swaggerDocs();
   }
 
   

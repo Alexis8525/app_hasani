@@ -20,6 +20,7 @@ class ProductoRoutes {
     this.router.put('/', ProductoController.update); // Sin parámetro en la ruta
     this.router.delete('/', ProductoController.delete); // Sin parámetro en la ruta
     this.router.get('/inventory/low-stock', ProductoController.getLowStock);
+    this.router.get('/alertas-stock', ProductoController.checkStockAlerts);
   }
 }
 

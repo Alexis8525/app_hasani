@@ -1,9 +1,12 @@
 // src/controllers/productos-controller.ts
 import { Request, Response } from 'express';
-import { ProductoModel } from '../models/productos-model';
+import { Producto, ProductoModel } from '../models/productos-model';
 import { pool } from '../config/db';
+import { StockAlertService } from '../helpers/stock-alerts';
+
 
 const productoModel = new ProductoModel(pool);
+const stockAlertService = new StockAlertService(pool);  
 
 const validarNombre = (nombre: string): boolean => {
   return !!nombre && nombre.trim().length > 0 && nombre.length <= 100;
@@ -43,6 +46,23 @@ export const ProductoController = {
     }
   },
 
+  async checkStockAlerts(req: Request, res: Response) {
+    try {
+      const alertas = await stockAlertService.verificarStockBajoGeneral(); // ✅ Ahora está definido
+      
+      res.json({ 
+        code: 0, 
+        message: `Verificación completada. ${alertas.length} productos con stock bajo.`,
+        data: alertas 
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        code: 1, 
+        message: 'Error verificando alertas de stock: ' + error.message 
+      });
+    }
+  },
+
   async getByNombre(req: Request, res: Response) {
     try {
       const { nombre } = req.body;
@@ -61,19 +81,35 @@ export const ProductoController = {
         });
       }
 
-      const producto = await productoModel.findByNombre(nombre);
-
-      if (!producto) {
+      const productos = await productoModel.findByNombre(nombre);
+      
+      if (!productos || productos.length === 0) {
         return res.status(404).json({ 
           code: 1, 
-          message: 'Producto no encontrado' 
+          message: 'No se encontraron productos' 
+        });
+      }
+
+      // Verificar si se devolvieron todos los productos (búsqueda sin resultados específicos)
+      const todosLosProductos = await productoModel.findAll();
+      const esBusquedaSinResultados = productos.length === todosLosProductos.length;
+      
+      if (esBusquedaSinResultados) {
+        return res.json({ 
+          code: 0, 
+          message: `No se encontraron productos con el nombre "${nombre}". Mostrando todos los productos disponibles.`,
+          data: productos,
+          total: productos.length,
+          busquedaOriginal: nombre
         });
       }
 
       res.json({ 
         code: 0, 
-        message: 'Producto obtenido correctamente', 
-        data: producto 
+        message: `Se encontraron ${productos.length} producto(s) con el nombre "${nombre}"`,
+        data: productos,
+        total: productos.length,
+        busquedaOriginal: nombre
       });
     } catch (error: any) {
       res.status(500).json({ 

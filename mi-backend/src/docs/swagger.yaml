@@ -1369,6 +1369,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  productos/alertas-stock:
+    get:
+      summary: Verificar alertas de stock (Alternativa)
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      description: |
+        Endpoint alternativo para verificar productos con stock bajo.
+        Devuelve la lista de productos que necesitan reposición.
+      responses:
+        '200':
+          description: Alertas de stock verificadas exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
   /movimientos:
     get:
       summary: Obtener todos los movimientos
@@ -1593,6 +1623,93 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /movimientos/stock/verificar-alertas:
+    post:
+      summary: Verificar alertas de stock bajo manualmente
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      description: |
+        Ejecuta una verificación manual de todos los productos con stock bajo 
+        y envía alertas por correo a los clientes configurados.
+        
+        **Nota:** Esta verificación también se ejecuta automáticamente todos los días a las 8:00 AM
+        y cuando se crean movimientos de salida.
+      responses:
+        '200':
+          description: Verificación de alertas completada exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            producto_id:
+                              type: integer
+                              example: 1
+                            producto_nombre:
+                              type: string
+                              example: "Laptop Dell XPS"
+                            stock_actual:
+                              type: integer
+                              example: 2
+                            stock_minimo:
+                              type: integer
+                              example: 5
+                            diferencia:
+                              type: integer
+                              example: 3
+                            cliente_email:
+                              type: string
+                              example: "cliente@empresa.com"
+                            cliente_nombre:
+                              type: string
+                              example: "Empresa Cliente S.A."
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/stock/bajo:
+    get:
+      summary: Obtener productos con stock bajo
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      description: |
+        Obtiene todos los productos cuyo stock actual está por debajo del stock mínimo configurado.
+        No envía alertas, solo devuelve la lista de productos.
+      responses:
+        '200':
+          description: Productos con stock bajo obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /bitacora:
     get:
