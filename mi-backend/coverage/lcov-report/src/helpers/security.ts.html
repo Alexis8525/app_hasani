@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">40.9% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/22</span>
+                <span class='fraction'>0/22</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">40% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>8/20</span>
+                <span class='fraction'>0/20</span>
             </div>
         
             
@@ -112,11 +112,11 @@
 <a name='L47'></a><a href='#L47'>47</a>
 <a name='L48'></a><a href='#L48'>48</a>
 <a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -129,24 +129,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -155,16 +155,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import bcrypt from 'bcrypt';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import dotenv from 'dotenv';
-dotenv.config();
+<span class="cstat-no" title="statement not covered" >import jwt, { SignOptions } from 'jsonwebtoken';</span>
+<span class="cstat-no" title="statement not covered" >import dotenv from 'dotenv';</span>
+<span class="cstat-no" title="statement not covered" >dotenv.config();</span>
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >generateOTP(</span>length = <span class="branch-0 cbranch-no" title="branch not covered" >6)</span> {
+<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >g</span>enerateOTP(</span>length = <span class="branch-0 cbranch-no" title="branch not covered" >6)</span> {
   const digits = <span class="cstat-no" title="statement not covered" >'0123456789';</span>
   let otp = <span class="cstat-no" title="statement not covered" >'';</span>
 <span class="cstat-no" title="statement not covered" >  for (let i = <span class="cstat-no" title="statement not covered" >0;</span> i &lt; length; i++) {</span>
@@ -177,14 +177,14 @@ export function <span class="fstat-no" title="function not covered" >generateOTP
  * Genera un token temporal (JWT) válido por 1 minuto.
  * Este mismo token se puede guardar en la DB tal cual.
  */
-export function <span class="fstat-no" title="function not covered" >generateTempToken(</span>payload: object = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span>: string {
+<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >g</span>enerateTempToken(</span>payload: object = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span>: string {
 <span class="cstat-no" title="statement not covered" >  return jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '5m' });</span>
 }
 &nbsp;
 /**
  * Genera un JWT para sesión normal.
  */
-export const generateToken = <span class="fstat-no" title="function not covered" >(</span>
+export const <span class="cstat-no" title="statement not covered" >generateToken = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span></span></span>
   payload: object,
   expiresIn: SignOptions['expiresIn'] = <span class="branch-0 cbranch-no" title="branch not covered" >'1h'</span>
 ) =&gt; {
@@ -194,7 +194,7 @@ export const generateToken = <span class="fstat-no" title="function not covered"
 /**
  * Verifica y decodifica un JWT.
  */
-export function <span class="fstat-no" title="function not covered" >verifyJWT(</span>token: string) {
+<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >v</span>erifyJWT(</span>token: string) {
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    return jwt.verify(token, process.env.JWT_SECRET as string);</span>
   } catch (err) {
@@ -203,7 +203,7 @@ export function <span class="fstat-no" title="function not covered" >verifyJWT(<
 }
 &nbsp;
 // helpers/security.ts - Añade esta función
-export function <span class="fstat-no" title="function not covered" >extractJwtSignature(</span>token: string): string {
+<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >e</span>xtractJwtSignature(</span>token: string): string {
   const parts = <span class="cstat-no" title="statement not covered" >token.split('.');</span>
 <span class="cstat-no" title="statement not covered" >  return parts[2]; </span>// Retorna solo la parte de la firma
 }
@@ -214,7 +214,7 @@ export function <span class="fstat-no" title="function not covered" >extractJwtS
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-25T01:37:29.003Z
+                at 2025-10-25T02:37:24.487Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
