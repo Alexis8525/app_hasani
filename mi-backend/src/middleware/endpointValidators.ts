@@ -1,6 +1,6 @@
 // middleware/validation.middleware.ts
 import { Request, Response, NextFunction } from 'express';
-import { UserModel } from '../models/user.models';
+import { UserModel } from '../models/user-models';
 
 export class ValidationMiddleware {
 

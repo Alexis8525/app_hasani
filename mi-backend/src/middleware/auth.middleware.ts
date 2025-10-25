@@ -1,6 +1,6 @@
 // middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
-import { SessionModel } from '../models/session.model';
+import { SessionModel } from '../models/session-model';
 import { verifyJWT, extractJwtSignature } from '../helpers/security';
 
 export interface AuthenticatedRequest extends Request {

@@ -29,6 +29,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
     subject,
     html,
   });
+  
   console.log('✉️ Email enviado:', info.messageId);
   return info;
 }

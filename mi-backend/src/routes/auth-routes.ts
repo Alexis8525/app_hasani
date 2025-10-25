@@ -1,6 +1,6 @@
 // routes/auth.routes.ts
 import { Router } from 'express';
-import { AuthController } from '../controllers/auth.controller';
+import { AuthController } from '../controllers/auth-controller';
 import { EndpointValidators, ValidationMiddleware} from '../middleware/endpointValidators';
 import { GlobalValidationMiddleware } from '../middleware/globalValidation.middleware';
 import { authenticateToken } from '../middleware/auth.middleware';

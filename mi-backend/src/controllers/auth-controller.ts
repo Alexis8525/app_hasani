@@ -3,9 +3,9 @@ import { Request, Response } from 'express';
 import { pool } from '../config/db';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { UserModel } from '../models/user.models';
-import { SessionModel } from '../models/session.model';
-import { PasswordResetModel } from '../models/passwordReset.model';
+import { UserModel } from '../models/user-models';
+import { SessionModel } from '../models/session-model';
+import { PasswordResetModel } from '../models/passwordReset-model';
 import { generateOTP, generateTempToken, generateToken, extractJwtSignature } from '../helpers/security';
 import { sendEmail, sendSMS } from '../helpers/notify';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
@@ -21,12 +21,22 @@ export class AuthController {
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) return res.status(401).json({ message: 'Credenciales inválidas' });
 
-      const previousSessions = await SessionModel.findActiveByUserId(user.id);
-      if (previousSessions.length > 0) {
-        console.log(`🔒 Invalidando ${previousSessions.length} sesiones anteriores`);
-        await SessionModel.invalidateAll(user.id);
+      // ✅ VERIFICAR SI YA TIENE SESIÓN ACTIVA - BLOQUEAR si existe
+      const activeSessions = await SessionModel.findActiveByUserId(user.id);
+      if (activeSessions.length > 0) {
+        return res.status(409).json({ 
+          message: 'Ya hay una sesión activa. Cierre la sesión actual antes de iniciar una nueva.',
+          code: 'ACTIVE_SESSION_EXISTS',
+          existing_session: {
+            id: activeSessions[0].id,
+            created_at: activeSessions[0].created_at,
+            device_info: activeSessions[0].device_info,
+            ip_address: activeSessions[0].ip_address
+          }
+        });
       }
 
+      // Solo si NO tiene sesión activa, continuar...
       if (user.two_factor_enabled) {
         const otp = generateOTP(6);
         const offlinePin = generateOTP(6);
@@ -34,20 +44,18 @@ export class AuthController {
         
         await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5, lat, lng, offlinePin);
 
-        // Notificaciones online
         try {
           if (user.email) {
             await sendEmail(user.email, 'Tu código 2FA', `
               <p>Tu código 2FA: <b>${otp}</b></p>
               <p>Token temporal: <b>${tempToken}</b></p>
-              <p>Este código expira en 1 minuto</p>
             `);
           }
           if (user.phone) {
-            await sendSMS(user.phone, `Tu código 2FA: ${otp}\nToken temporal: ${tempToken}`);
+            await sendSMS(user.phone, `Código 2FA: ${otp}`);
           }
         } catch (err) {
-          console.warn('No se pudo enviar notificación online, el usuario usará el PIN offline');
+          console.warn('No se pudo enviar notificación online');
         }
       
         return res.status(200).json({
@@ -58,7 +66,7 @@ export class AuthController {
         });
       }
 
-      // Usuario sin 2FA - Crear sesión directamente
+      // Usuario sin 2FA
       const token = generateToken({ 
         id: user.id, 
         role: user.role,
@@ -66,8 +74,6 @@ export class AuthController {
       });
 
       const tokenIdentifier = extractJwtSignature(token);
-      const now = new Date(); // UTC implícito
-      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
 
       const session = await SessionModel.create({
         user_id: user.id,
@@ -77,23 +83,30 @@ export class AuthController {
         ip_address: ip_address || req.ip,
         latitude: lat,
         longitude: lng,
-        expires_at: expiresAt, // siempre después de created_at
-        last_activity: now
+        expires_at: new Date(Date.now() + 60 * 60 * 1000),
+        last_activity: new Date()
       });
 
       return res.json({
-        message: 'Login exitoso - Sesiones anteriores invalidadas',
+        message: 'Login exitoso',
         token,
         user: { id: user.id, email: user.email, role: user.role },
         session: {
           id: session.id,
           created_at: session.created_at,
           expires_at: session.expires_at
-        },
-        previous_sessions_invalidated: previousSessions.length
+        }
       });
 
     } catch (err: any) {
+      // ✅ Capturar el error de "sesión ya activa"
+      if (err.message.includes('Ya existe una sesión activa')) {
+        return res.status(409).json({ 
+          message: err.message,
+          code: 'ACTIVE_SESSION_EXISTS'
+        });
+      }
+      
       console.error(err);
       res.status(500).json({ message: 'Error en login', error: err.message });
     }

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { UserModel } from '../models/user.models';
+import { UserModel } from '../models/user-models';
 import { sendEmail } from '../helpers/notify';
 import QRCode from 'qrcode';
 import { pool } from '../config/db';

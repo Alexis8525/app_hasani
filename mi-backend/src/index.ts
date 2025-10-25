@@ -5,11 +5,18 @@ import cors from 'cors';
 import { connectDB } from './config/db';
 import userRoutes from './routes/user-routes';
 import authRoutes from './routes/auth-routes';
+import clienteRoutes from './routes/clientes-routes';
+import proveedorRoutes from './routes/proveedores-routes';
+import productoRoutes from './routes/productos-routes';
+import movimientoRoutes from './routes/movimientos-routes';
+import bitacoraRoutes from './routes/bitacora-routes';
 // Swagger
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { GlobalValidationMiddleware } from './middleware/globalValidation.middleware';
+import './jobs/stock-alert-job';
+
 
 class Server {
   public app: Application;
@@ -18,7 +25,7 @@ class Server {
     this.app = express();
     this.config();
     this.routes();
-    this.swaggerDocs(); // 👉 Swagger
+    this.swaggerDocs();
   }
 
   
@@ -52,6 +59,11 @@ class Server {
     this.app.get('/', (req, res) => res.send('¡Hola, mundo!'));
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/clientes', clienteRoutes);
+    this.app.use('/api/proveedores', proveedorRoutes);
+    this.app.use('/api/productos', productoRoutes);
+    this.app.use('/api/movimientos', movimientoRoutes);
+    this.app.use('/api/bitacora', bitacoraRoutes);
   }
 
   handleErrors(): void {

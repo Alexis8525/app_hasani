@@ -76,7 +76,7 @@ paths:
                 properties:
                   message: { type: string, example: "Credenciales inválidas" }
 
-  /auth/verify-2fa:
+  /auth/2fa/verify:
     post:
       summary: Verificar código 2FA
       tags: [Auth]
@@ -654,7 +654,1391 @@ paths:
         '404':
           description: PIN no encontrado o ya revocado
 
+  /clientes:
+    get:
+      summary: Obtener todos los clientes
+      tags: [Clientes]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de clientes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Cliente'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Crear un nuevo cliente
+      tags: [Clientes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_user, nombre]
+              properties:
+                id_user:
+                  type: integer
+                  example: 1
+                nombre:
+                  type: string
+                  example: "Juan Pérez"
+                telefono:
+                  type: string
+                  example: "1234567890"
+                contacto:
+                  type: string
+                  example: "María García"
+      responses:
+        '201':
+          description: Cliente creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cliente'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+        summary: Actualizar un cliente
+        tags: [Clientes]
+        security:
+          - bearerAuth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - nombre
+                properties:
+                  nombre:
+                    type: string
+                    example: "Juan Pérez"
+                  telefono:
+                    type: string
+                    example: "+0987654321"
+                  contacto:
+                    type: string
+                    example: "Ana Martínez"
+        responses:
+          '200':
+            description: Cliente actualizado exitosamente
+            content:
+              application/json:
+                schema:
+                  allOf:
+                    - $ref: '#/components/schemas/ApiResponse'
+                    - type: object
+                      properties:
+                        data:
+                          $ref: '#/components/schemas/Cliente'
+          '404':
+            description: Cliente no encontrado
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '500':
+            description: Error del servidor
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Eliminar un cliente
+      tags: [Clientes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Juan Pérez"
+      responses:
+        '200':
+          description: Cliente eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /clientes/user:
+    post:
+      summary: Obtener clientes por usuario
+      tags: [Clientes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Clientes obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Cliente'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /clientes/buscar:
+    post:
+      summary: Obtener un cliente por nombre
+      tags: [Clientes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Juan Pérez"
+      responses:
+        '200':
+          description: Cliente obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /proveedores:
+    get:
+      summary: Obtener todos los proveedores
+      tags: [Proveedores]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Proveedores obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Proveedor'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Crear un nuevo proveedor
+      tags: [Proveedores]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Proveedor XYZ"
+                telefono:
+                  type: string
+                  example: "1234567890"
+                contacto:
+                  type: string
+                  example: "Carlos López"
+      responses:
+        '201':
+          description: Proveedor creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Proveedor'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Actualizar un proveedor
+      tags: [Proveedores]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Proveedor XYZ"
+                telefono:
+                  type: string
+                  example: "+0987654321"
+                contacto:
+                  type: string
+                  example: "Laura García"
+      responses:
+        '200':
+          description: Proveedor actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Proveedor'
+        '404':
+          description: Proveedor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Eliminar un proveedor
+      tags: [Proveedores]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Proveedor XYZ"
+      responses:
+        '200':
+          description: Proveedor eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+        '404':
+          description: Proveedor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /proveedores/buscar:
+    post:
+      summary: Obtener un proveedor por nombre
+      tags: [Proveedores]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Proveedor XYZ"
+      responses:
+        '200':
+          description: Proveedor obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Proveedor'
+        '404':
+          description: Proveedor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /productos:
+    get:
+      summary: Obtener todos los productos
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de productos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Crear un nuevo producto
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codigo, nombre, unidad]
+              properties:
+                codigo:
+                  type: string
+                  example: "PROD-001"
+                nombre:
+                  type: string
+                  example: "Laptop Dell XPS"
+                descripcion:
+                  type: string
+                  example: "Laptop de 15 pulgadas, 16GB RAM"
+                categoria:
+                  type: string
+                  example: "Electrónicos"
+                unidad:
+                  type: string
+                  example: "pza"
+                stock_minimo:
+                  type: integer
+                  example: 5
+                stock_actual:
+                  type: integer
+                  example: 50
+                id_proveedor:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Producto creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+        '400':
+          description: Datos de entrada inválidos o código duplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Actualizar un producto
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Laptop Dell XPS"
+                codigo:
+                  type: string
+                  example: "PROD-001-UPD"
+                descripcion:
+                  type: string
+                  example: "Laptop de 15 pulgadas, 32GB RAM"
+                categoria:
+                  type: string
+                  example: "Electrónicos"
+                unidad:
+                  type: string
+                  example: "pza"
+                stock_minimo:
+                  type: integer
+                  example: 10
+                stock_actual:
+                  type: integer
+                  example: 25
+                id_proveedor:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Producto actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Eliminar un producto
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Laptop Dell XPS"
+      responses:
+        '200':
+          description: Producto eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: integer, example: 0 }
+                  message: { type: string }
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /productos/buscar:
+    post:
+      summary: Obtener un producto por nombre
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombre
+              properties:
+                nombre:
+                  type: string
+                  example: "Laptop Dell XPS"
+      responses:
+        '200':
+          description: Producto obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /productos/inventory/low-stock:
+    get:
+      summary: Obtener productos con stock bajo
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Productos con stock bajo obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  productos/alertas-stock:
+    get:
+      summary: Verificar alertas de stock (Alternativa)
+      tags: [Productos]
+      security:
+        - bearerAuth: []
+      description: |
+        Endpoint alternativo para verificar productos con stock bajo.
+        Devuelve la lista de productos que necesitan reposición.
+      responses:
+        '200':
+          description: Alertas de stock verificadas exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /movimientos:
+    get:
+      summary: Obtener todos los movimientos
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de movimientos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movimiento'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Crear un nuevo movimiento
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, id_producto, cantidad, responsable]
+              properties:
+                tipo:
+                  type: string
+                  enum: [Entrada, Salida]
+                  example: "Entrada"
+                id_producto:
+                  type: integer
+                  example: 1
+                cantidad:
+                  type: integer
+                  minimum: 1
+                  example: 10
+                referencia:
+                  type: string
+                  example: "Orden de compra #123"
+                responsable:
+                  type: integer
+                  example: 1
+                id_cliente:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Movimiento creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Movimiento'
+        '400':
+          description: Datos de entrada inválidos o stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/buscar:
+    post:
+      summary: Obtener un movimiento por ID
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Movimiento obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Movimiento'
+        '404':
+          description: Movimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/producto:
+    post:
+      summary: Obtener movimientos por producto
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nombreProducto
+              properties:
+                nombreProducto:
+                  type: string
+                  example: "Laptop Dell XPS"
+      responses:
+        '200':
+          description: Movimientos del producto obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movimiento'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/report/date-range:
+    post:
+      summary: Obtener movimientos por rango de fecha
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fechaInicio
+                - fechaFin
+              properties:
+                fechaInicio:
+                  type: string
+                  format: date
+                  example: "2024-01-01"
+                fechaFin:
+                  type: string
+                  format: date
+                  example: "2024-12-31"
+      responses:
+        '200':
+          description: Movimientos por rango de fecha obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movimiento'
+        '400':
+          description: Parámetros de fecha inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/stock/verificar-alertas:
+    post:
+      summary: Verificar alertas de stock bajo manualmente
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      description: |
+        Ejecuta una verificación manual de todos los productos con stock bajo 
+        y envía alertas por correo a los clientes configurados.
+        
+        **Nota:** Esta verificación también se ejecuta automáticamente todos los días a las 8:00 AM
+        y cuando se crean movimientos de salida.
+      responses:
+        '200':
+          description: Verificación de alertas completada exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            producto_id:
+                              type: integer
+                              example: 1
+                            producto_nombre:
+                              type: string
+                              example: "Laptop Dell XPS"
+                            stock_actual:
+                              type: integer
+                              example: 2
+                            stock_minimo:
+                              type: integer
+                              example: 5
+                            diferencia:
+                              type: integer
+                              example: 3
+                            cliente_email:
+                              type: string
+                              example: "cliente@empresa.com"
+                            cliente_nombre:
+                              type: string
+                              example: "Empresa Cliente S.A."
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /movimientos/stock/bajo:
+    get:
+      summary: Obtener productos con stock bajo
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      description: |
+        Obtiene todos los productos cuyo stock actual está por debajo del stock mínimo configurado.
+        No envía alertas, solo devuelve la lista de productos.
+      responses:
+        '200':
+          description: Productos con stock bajo obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /bitacora:
+    get:
+      summary: Obtener toda la bitácora
+      tags: [Bitácora]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Bitácora obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Bitacora'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Crear un nuevo registro en bitácora
+      tags: [Bitácora]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_movimiento, id_proveedor, cantidad, id_producto]
+              properties:
+                id_movimiento:
+                  type: integer
+                  example: 1
+                id_proveedor:
+                  type: integer
+                  example: 1
+                cantidad:
+                  type: integer
+                  example: 50
+                id_producto:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: Registro de bitácora creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Bitacora'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /bitacora/movimiento:
+    post:
+      summary: Obtener registros de bitácora por movimiento
+      tags: [Bitácora]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - movimientoId
+              properties:
+                movimientoId:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Registros de bitácora por movimiento obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Bitacora'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /bitacora/proveedor:
+    post:
+      summary: Obtener registros de bitácora por proveedor
+      tags: [Bitácora]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - proveedorId
+              properties:
+                proveedorId:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Registros de bitácora por proveedor obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Bitacora'
+        '500':
+          description: Error del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1
+        message:
+          type: string
+
+    Cliente:
+      type: object
+      required:
+        - id_user
+        - nombre
+      properties:
+        id_cliente:
+          type: integer
+          readOnly: true
+        id_user:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: "Juan Pérez"
+        telefono:
+          type: string
+          example: "1234567890"
+        contacto:
+          type: string
+          example: "María García"
+
+    Proveedor:
+      type: object
+      required:
+        - nombre
+      properties:
+        id_proveedor:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          example: "Proveedor ABC"
+        telefono:
+          type: string
+          example: "1234567890"
+        contacto:
+          type: string
+          example: "Carlos López"
+
+    Producto:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - unidad
+      properties:
+        id_producto:
+          type: integer
+          readOnly: true
+        codigo:
+          type: string
+          example: "PROD-001"
+        nombre:
+          type: string
+          example: "Laptop Dell XPS"
+        descripcion:
+          type: string
+          example: "Laptop de 15 pulgadas, 16GB RAM"
+        categoria:
+          type: string
+          example: "Electrónicos"
+        unidad:
+          type: string
+          example: "pza"
+        stock_minimo:
+          type: integer
+          example: 5
+        stock_actual:
+          type: integer
+          example: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        id_proveedor:
+          type: integer
+          example: 1
+
+    Movimiento:
+      type: object
+      required:
+        - tipo
+        - id_producto
+        - cantidad
+        - responsable
+      properties:
+        id_movimiento:
+          type: integer
+          readOnly: true
+        fecha:
+          type: string
+          format: date-time
+          readOnly: true
+        tipo:
+          type: string
+          enum: [Entrada, Salida]
+          example: "Entrada"
+        id_producto:
+          type: integer
+          example: 1
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 10
+        referencia:
+          type: string
+          example: "Orden de compra #123"
+        responsable:
+          type: integer
+          example: 1
+        id_cliente:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Bitacora:
+      type: object
+      required:
+        - id_movimiento
+        - id_proveedor
+        - cantidad
+        - id_producto
+      properties:
+        id_movimiento:
+          type: integer
+          example: 1
+        id_proveedor:
+          type: integer
+          example: 1
+        cantidad:
+          type: integer
+          example: 50
+        id_producto:
+          type: integer
+          example: 1
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -728,4 +2112,14 @@ tags:
     description: Gestión de usuarios
   - name: Sessions
     description: Gestión de sesiones de usuario
+  - name: Clientes
+    description: Operaciones relacionadas con clientes
+  - name: Proveedores
+    description: Operaciones relacionadas con proveedores
+  - name: Productos
+    description: Operaciones relacionadas con productos
+  - name: Movimientos
+    description: Operaciones relacionadas con movimientos de inventario
+  - name: Bitácora
+    description: Operaciones relacionadas con bitácora de proveedores
     

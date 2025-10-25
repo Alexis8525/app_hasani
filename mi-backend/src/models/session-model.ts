@@ -18,21 +18,18 @@ export interface ISession {
 
 export class SessionModel {
   static async create(sessionData: Omit<ISession, 'id' | 'created_at'>): Promise<ISession> {
-    // OPCIÓN A: Invalidar sesiones anteriores del mismo usuario
-    await this.invalidateAll(sessionData.user_id);
-
-    // OPCIÓN B: Verificar si ya existe una sesión activa y rechazar
     const activeSessions = await this.findActiveByUserId(sessionData.user_id);
+    
     if (activeSessions.length > 0) {
-      throw new Error('Ya existe una sesión activa para este usuario');
+      console.log(`❌ BLoqueando nueva sesión - Usuario ${sessionData.user_id} ya tiene sesión activa`);
+      throw new Error('Ya existe una sesión activa para este usuario. Cierre la sesión actual primero.');
     }
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
 
-    console.log('📝 CREANDO NUEVA SESIÓN:');
+    console.log('📝 CREANDO NUEVA SESIÓN (usuario sin sesiones activas):');
     console.log('- User ID:', sessionData.user_id);
-    console.log('- Sesiones activas anteriores:', activeSessions.length);
 
     const result = await pool.query(
       `INSERT INTO sessions (user_id, token, token_identifier, device_info, ip_address, latitude, longitude, expires_at, last_activity, is_active) 
