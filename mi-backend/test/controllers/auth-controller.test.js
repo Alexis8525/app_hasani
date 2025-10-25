@@ -1,3 +1,7 @@
+jest.mock('../../src/helpers/notify', () => ({
+    sendEmail: jest.fn().mockResolvedValue(undefined),
+    sendSMS: jest.fn().mockResolvedValue(undefined),
+  }));
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const auth_controller_1 = require("../../src/controllers/auth-controller");
