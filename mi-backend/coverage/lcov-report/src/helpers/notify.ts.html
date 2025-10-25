@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>9/21</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">16.66% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/21</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
@@ -119,31 +119,15 @@
 <a name='L54'></a><a href='#L54'>54</a>
 <a name='L55'></a><a href='#L55'>55</a>
 <a name='L56'></a><a href='#L56'>56</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -152,15 +136,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -174,12 +174,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/helpers/notify.ts
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-dotenv.config();
+<span class="cstat-no" title="statement not covered" >import nodemailer from 'nodemailer';</span>
+<span class="cstat-no" title="statement not covered" >import dotenv from 'dotenv';</span>
+<span class="cstat-no" title="statement not covered" >dotenv.config();</span>
 &nbsp;
 // Configuración de correo (Gmail)
-const transporter = nodemailer.createTransport({
+const transporter = <span class="cstat-no" title="statement not covered" >nodemailer.createTransport({</span>
   host: process.env.EMAIL_HOST,
   port: Number(process.env.EMAIL_PORT),
   secure: process.env.EMAIL_SECURE === 'true',
@@ -189,7 +189,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 &nbsp;
-transporter.verify(<span class="fstat-no" title="function not covered" >(e</span>rror, success) =&gt; {
+<span class="cstat-no" title="statement not covered" >transporter.verify(<span class="fstat-no" title="function not covered" >(e</span>rror, success) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  if (error) {</span>
 <span class="cstat-no" title="statement not covered" >    console.error('❌ Error conexión SMTP:', error);</span>
   } else {
@@ -197,7 +197,7 @@ transporter.verify(<span class="fstat-no" title="function not covered" >(e</span
   }
 });
 &nbsp;
-export async function <span class="fstat-no" title="function not covered" >sendEmail(</span>to: string, subject: string, html: string) {
+<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >sendEmail(</span>to: string, subject: string, html: string) {
   const info = <span class="cstat-no" title="statement not covered" >await transporter.sendMail({</span>
     from: `"Mi App" &lt;${process.env.EMAIL_USER}&gt;`,
     to,
@@ -210,12 +210,12 @@ export async function <span class="fstat-no" title="function not covered" >sendE
 }
 &nbsp;
 // Twilio SMS (opcional)
-import Twilio from 'twilio';
-const twilioClient = process.env.TWILIO_ACCOUNT_SID
+<span class="cstat-no" title="statement not covered" >import Twilio from 'twilio';</span>
+const twilioClient = <span class="cstat-no" title="statement not covered" >process.env.TWILIO_ACCOUNT_SID</span>
   ? Twilio(process.env.TWILIO_ACCOUNT_SID as string, process.env.TWILIO_AUTH_TOKEN as string)
-  : <span class="branch-1 cbranch-no" title="branch not covered" >null;</span>
+  : null;
 &nbsp;
-export async function <span class="fstat-no" title="function not covered" >sendSMS(</span>to: string, body: string) {
+<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >sendSMS(</span>to: string, body: string) {
 <span class="cstat-no" title="statement not covered" >  if (!twilioClient) {</span>
 <span class="cstat-no" title="statement not covered" >    console.warn('Twilio no configurado, SMS no enviado');</span>
 <span class="cstat-no" title="statement not covered" >    return null;</span>
@@ -235,7 +235,7 @@ export async function <span class="fstat-no" title="function not covered" >sendS
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-25T01:26:52.528Z
+                at 2025-10-25T01:37:29.003Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
