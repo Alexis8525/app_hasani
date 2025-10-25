@@ -15,12 +15,12 @@ const validarCantidad = (cantidad: number): boolean => {
 
 const validarCamposObligatorios = (campos: any): string | null => {
   const { id_movimiento, id_proveedor, cantidad, id_producto } = campos;
-  
+
   if (!id_movimiento) return 'id_movimiento';
   if (!id_proveedor) return 'id_proveedor';
   if (!cantidad) return 'cantidad';
   if (!id_producto) return 'id_producto';
-  
+
   return null;
 };
 
@@ -107,7 +107,7 @@ export const BitacoraController = {
   async getByMovimiento(req: Request, res: Response) {
     try {
       const { movimientoId } = req.body;
-      
+
       if (!movimientoId) {
         return res.status(400).json({
           code: 1,
@@ -124,7 +124,7 @@ export const BitacoraController = {
 
       const id_movimiento = parseInt(movimientoId);
       const registros = await bitacoraModel.findByMovimiento(id_movimiento);
-      
+
       res.json({
         code: 0,
         message: 'Registros de bitácora por movimiento obtenidos correctamente',
@@ -141,7 +141,7 @@ export const BitacoraController = {
   async getByProveedor(req: Request, res: Response) {
     try {
       const { proveedorId } = req.body;
-      
+
       if (!proveedorId) {
         return res.status(400).json({
           code: 1,
@@ -158,7 +158,7 @@ export const BitacoraController = {
 
       const id_proveedor = parseInt(proveedorId);
       const registros = await bitacoraModel.findByProveedor(id_proveedor);
-      
+
       res.json({
         code: 0,
         message: 'Registros de bitácora por proveedor obtenidos correctamente',

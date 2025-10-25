@@ -17,10 +17,8 @@ export class AuthController {
     try {
       const user = await UserModel.findByEmailFull(email);
       if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
-
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) return res.status(401).json({ message: 'Credenciales inválidas' });
-
       // ✅ VERIFICAR SI YA TIENE SESIÓN ACTIVA - BLOQUEAR si existe
       const activeSessions = await SessionModel.findActiveByUserId(user.id);
       if (activeSessions.length > 0) {
@@ -35,7 +33,6 @@ export class AuthController {
           }
         });
       }
-
       // Solo si NO tiene sesión activa, continuar...
       if (user.two_factor_enabled) {
         const otp = generateOTP(6);
@@ -43,7 +40,6 @@ export class AuthController {
         const tempToken = generateTempToken({ id: user.id, type: '2fa' });
         
         await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5, lat, lng, offlinePin);
-
         try {
           if (user.email) {
             await sendEmail(user.email, 'Tu código 2FA', `
@@ -56,8 +52,7 @@ export class AuthController {
           }
         } catch (err) {
           console.warn('No se pudo enviar notificación online');
-        }
-      
+        }  
         return res.status(200).json({
           message: '2FA requerido',
           requires2fa: true,
@@ -65,16 +60,13 @@ export class AuthController {
           offlinePin
         });
       }
-
       // Usuario sin 2FA
       const token = generateToken({ 
         id: user.id, 
         role: user.role,
         session_type: 'online'
       });
-
       const tokenIdentifier = extractJwtSignature(token);
-
       const session = await SessionModel.create({
         user_id: user.id,
         token: token,
@@ -86,7 +78,6 @@ export class AuthController {
         expires_at: new Date(Date.now() + 60 * 60 * 1000),
         last_activity: new Date()
       });
-
       return res.json({
         message: 'Login exitoso',
         token,
@@ -97,7 +88,6 @@ export class AuthController {
           expires_at: session.expires_at
         }
       });
-
     } catch (err: any) {
       // ✅ Capturar el error de "sesión ya activa"
       if (err.message.includes('Ya existe una sesión activa')) {
@@ -111,36 +101,28 @@ export class AuthController {
       res.status(500).json({ message: 'Error en login', error: err.message });
     }
   }
-
   // Verificar 2FA - CORREGIDO
   static async verify2FA(req: Request, res: Response) {
     const { tempToken, otp, device_info, ip_address, lat, lng } = req.body;
     try {
       console.log('TempToken recibido:', tempToken);
       console.log('OTP recibido:', otp);
-  
       const reset = await PasswordResetModel.findValidByTokenAndOtp(tempToken, '2fa', String(otp).trim());
       if (!reset) return res.status(400).json({ message: 'Token o código 2FA inválido o expirado' });
-  
       await PasswordResetModel.markUsed(reset.id);
-  
       const userData = await UserModel.findById(reset.user_id);
       if (!userData || !userData.id) {
         return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
       }
-
       // Generar token final y crear sesión
       const finalToken = generateToken({ 
         id: userData.id, 
         role: userData.role,
         session_type: 'online'
       });
-
       const tokenIdentifier = extractJwtSignature(finalToken);
-
       const now = new Date(); // UTC implícito
       const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
-
       const session = await SessionModel.create({
         user_id: userData.id, // Ahora userData.id está verificado
         token: finalToken,
@@ -163,53 +145,42 @@ export class AuthController {
           expires_at: session.expires_at
         }
       });
-  
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error verificando 2FA', error: err.message });
     }
   }
-
   // Verify Offline - CORREGIDO
   static async verifyOffline(req: Request, res: Response) {
     const { email, offlinePin, device_info, ip_address, lat, lng } = req.body;
-  
     try {
       console.log('=== VERIFICACIÓN OFFLINE ===');
       console.log('Email:', email);
       console.log('PIN recibido:', offlinePin);
-  
       if (!email || !offlinePin) {
         return res.status(400).json({ message: 'Email y PIN son requeridos' });
       }
-  
       // Verificar PIN offline
       const reset = await PasswordResetModel.verifyOffline(email, offlinePin);
       if (!reset) {
         return res.status(400).json({ message: 'PIN offline inválido o expirado' });
       }
-  
       // Marcar como usado
       await PasswordResetModel.markUsed(reset.id);
-  
       // Obtener información del usuario
       const userData = await UserModel.findByEmail(email);
       if (!userData || !userData.id) {
         return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
       }
-  
       // Generar token de sesión offline
       const token = generateToken({ 
         id: userData.id, 
         role: userData.role,
         session_type: 'offline'
       });
-
       const tokenIdentifier = extractJwtSignature(token);
-
       const now = new Date(); // UTC implícito
       const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
-
       const session = await SessionModel.create({
         user_id: userData.id, // Ahora userData.id está verificado
         token: token,
@@ -221,7 +192,6 @@ export class AuthController {
         expires_at: expiresAt, // siempre después de created_at
         last_activity: now
       });
-  
       res.json({
         message: 'Login offline exitoso',
         token,
@@ -239,19 +209,15 @@ export class AuthController {
       res.status(500).json({ message: 'Error verificando PIN offline', error: err.message });
     }
   }
-
   // Resto de métodos sin cambios...
   static async requestPasswordReset(req: Request, res: Response) {
     const { email, via = 'email' } = req.body;
     try {
       const user = await UserModel.findByEmailFull(email);
       if (!user) return res.status(200).json({ message: 'Si existe la cuenta, se enviará un correo' });
-  
       const tokenPlain = crypto.randomBytes(32).toString('hex');
       const otp = via === 'sms' ? generateOTP(6) : undefined;
-  
       await PasswordResetModel.create(user.id, tokenPlain, 'reset', otp, 30);
-      
       const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
       if (via === 'email') {
         await sendEmail(user.email, 'Restablecer contraseña', `<p>Este es tu token= <a>${tokenPlain} </a></p>`);
@@ -264,30 +230,24 @@ export class AuthController {
       res.status(500).json({ message: 'Error solicitando restablecimiento', error: err.message });
     }
   }
-
   static async confirmPasswordReset(req: Request, res: Response) {
     const { token, newPassword } = req.body;
     try {
       if (!token) return res.status(400).json({ message: 'Falta el token' });
-  
       const reset = await PasswordResetModel.findValidByToken(token, 'reset');
       if (!reset) return res.status(400).json({ message: 'Token inválido o expirado' });
-  
       if (!UserModel.validatePasswordFormat(newPassword)) {
         return res.status(400).json({ message: 'Formato de contraseña inválido' });
       }
-  
       const hashed = await bcrypt.hash(newPassword, 10);
       await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashed, reset.user_id]);
       await PasswordResetModel.markUsed(reset.id);
-  
       return res.json({ message: 'Contraseña restablecida correctamente' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error confirmando restablecimiento', error: err.message });
     }
   }
-
   static async recoverUsername(req: Request, res: Response) {
     const { emailOrPhone } = req.body;
     try {
@@ -298,9 +258,7 @@ export class AuthController {
         const result = await pool.query('SELECT id, email, phone FROM users WHERE phone=$1 LIMIT 1', [emailOrPhone]);
         userData = result.rows[0];
       }
-
       if (!userData) return res.status(200).json({ message: 'Si existe, recibirás la información' });
-
       if (userData.email) {
         await sendEmail(userData.email, 'Recuperación de usuario', `<p>Tu usuario: <b>${userData.email}</b></p>`);
       }
@@ -314,7 +272,6 @@ export class AuthController {
       res.status(500).json({ message: 'Error recuperando usuario', error: err.message });
     }
   }
-
   // Métodos de gestión de sesiones
   static async logout(req: AuthenticatedRequest, res: Response) {
     try {
@@ -323,14 +280,12 @@ export class AuthController {
       if (token) {
         await SessionModel.invalidate(token);
       }
-
       res.json({ message: 'Sesión cerrada exitosamente' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error cerrando sesión', error: err.message });
     }
   }
-
   static async getActiveSessions(req: AuthenticatedRequest, res: Response) {
     try {
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
@@ -347,7 +302,6 @@ export class AuthController {
           lng: session.longitude
         } : null
       }));
-
       res.json({
         sessions: safeSessions,
         total: safeSessions.length
@@ -357,25 +311,21 @@ export class AuthController {
       res.status(500).json({ message: 'Error obteniendo sesiones', error: err.message });
     }
   }
-
   static async logoutOtherSessions(req: AuthenticatedRequest, res: Response) {
     try {
       const currentToken = req.headers['authorization']?.split(' ')[1];
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
-
       for (const session of sessions) {
         if (session.token !== currentToken) {
           await SessionModel.invalidate(session.token);
         }
       }
-
       res.json({ message: 'Otras sesiones cerradas exitosamente' });
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error cerrando otras sesiones', error: err.message });
     }
   }
-
   static async logoutSession(req: AuthenticatedRequest, res: Response) {
     try {
       const { sessionId } = req.params;
@@ -386,7 +336,6 @@ export class AuthController {
       if (!sessionToLogout) {
         return res.status(404).json({ message: 'Sesión no encontrada' });
       }
-
       await SessionModel.invalidate(sessionToLogout.token);
       res.json({ message: 'Sesión cerrada exitosamente' });
     } catch (err: any) {
@@ -394,7 +343,6 @@ export class AuthController {
       res.status(500).json({ message: 'Error cerrando sesión', error: err.message });
     }
   }
-
   static async refreshToken(req: AuthenticatedRequest, res: Response) {
     try {
       const oldToken = req.headers['authorization']?.split(' ')[1];
@@ -402,19 +350,15 @@ export class AuthController {
       if (!oldToken) {
         return res.status(400).json({ message: 'Token requerido' });
       }
-
       await SessionModel.invalidate(oldToken);
-
       const newToken = generateToken({ 
         id: req.user.id, 
         role: req.user.role,
         session_type: 'online'
       });
-
       const tokenIdentifier = extractJwtSignature(newToken);
       const now = new Date(); // UTC implícito
       const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
-
       const session = await SessionModel.create({
         user_id: req.user.id,
         token: newToken,
@@ -426,7 +370,6 @@ export class AuthController {
         expires_at: expiresAt, // siempre después de created_at
         last_activity: now
       });
-
       res.json({
         message: 'Token renovado',
         token: newToken,
