@@ -18,11 +18,11 @@ export class ProveedorModel {
   async findAll(): Promise<Proveedor[]> {
     try {
       const result = await this.pool.query('SELECT * FROM proveedores ORDER BY nombre ASC');
-      
+
       if (!result.rows || result.rows.length === 0) {
         throw new Error('No se encontraron proveedores en la base de datos');
       }
-      
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al obtener todos los proveedores: ${error.message}`);
@@ -39,21 +39,20 @@ export class ProveedorModel {
         throw new Error('El nombre no puede tener más de 100 caracteres');
       }
 
-      const result = await this.pool.query(
-        'SELECT * FROM proveedores WHERE nombre ILIKE $1',
-        [nombre]
-      );
-  
+      const result = await this.pool.query('SELECT * FROM proveedores WHERE nombre ILIKE $1', [
+        nombre,
+      ]);
+
       if (result.rows.length === 0) {
         const all = await this.pool.query('SELECT * FROM proveedores');
-        
+
         if (!all.rows || all.rows.length === 0) {
           throw new Error('No hay proveedores registrados en el sistema');
         }
-        
+
         return all.rows;
       }
-  
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al buscar proveedor por nombre: ${error.message}`);
@@ -95,7 +94,10 @@ export class ProveedorModel {
     }
   }
 
-  async update(nombre: string, proveedor: Partial<Omit<Proveedor, 'id_proveedor'>>): Promise<Proveedor | null> {
+  async update(
+    nombre: string,
+    proveedor: Partial<Omit<Proveedor, 'id_proveedor'>>
+  ): Promise<Proveedor | null> {
     try {
       if (!nombre || nombre.trim().length === 0) {
         throw new Error('El nombre es obligatorio para la actualización');
@@ -141,11 +143,11 @@ export class ProveedorModel {
       }
 
       const result = await this.pool.query('DELETE FROM proveedores WHERE nombre = $1', [nombre]);
-      
+
       if ((result.rowCount ?? 0) === 0) {
         throw new Error('No se encontró el proveedor para eliminar');
       }
-      
+
       return (result.rowCount ?? 0) > 0;
     } catch (error: any) {
       throw new Error(`Error al eliminar proveedor: ${error.message}`);

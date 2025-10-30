@@ -23,10 +23,7 @@ export function generateTempToken(payload: object = {}): string {
 /**
  * Genera un JWT para sesión normal.
  */
-export const generateToken = (
-  payload: object,
-  expiresIn: SignOptions['expiresIn'] = '1h'
-) => {
+export const generateToken = (payload: object, expiresIn: SignOptions['expiresIn'] = '1h') => {
   return jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn });
 };
 

@@ -31,10 +31,10 @@ const validarReferencia = (referencia: string): boolean => {
 
 const validarFechas = (fechaInicio: string, fechaFin: string): boolean => {
   if (!fechaInicio || !fechaFin) return false;
-  
+
   const inicio = new Date(fechaInicio);
   const fin = new Date(fechaFin);
-  
+
   return inicio <= fin;
 };
 
@@ -42,15 +42,15 @@ export const MovimientoController = {
   async getAll(req: Request, res: Response) {
     try {
       const movimientos = await movimientoModel.findAll();
-      res.json({ 
-        code: 0, 
-        message: 'Movimientos obtenidos correctamente', 
-        data: movimientos 
+      res.json({
+        code: 0,
+        message: 'Movimientos obtenidos correctamente',
+        data: movimientos,
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        code: 1, 
-        message: 'Error al obtener movimientos: ' + error.message 
+      res.status(500).json({
+        code: 1,
+        message: 'Error al obtener movimientos: ' + error.message,
       });
     }
   },
@@ -58,18 +58,18 @@ export const MovimientoController = {
   async getById(req: Request, res: Response) {
     try {
       const { id } = req.body;
-      
+
       if (!id) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo id es obligatorio en el body' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo id es obligatorio en el body',
         });
       }
 
       if (!validarId(id)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El ID debe ser un número mayor a 0' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El ID debe ser un número mayor a 0',
         });
       }
 
@@ -77,21 +77,21 @@ export const MovimientoController = {
       const movimiento = await movimientoModel.findById(movimientoId);
 
       if (!movimiento) {
-        return res.status(404).json({ 
-          code: 1, 
-          message: 'Movimiento no encontrado' 
+        return res.status(404).json({
+          code: 1,
+          message: 'Movimiento no encontrado',
         });
       }
 
-      res.json({ 
-        code: 0, 
-        message: 'Movimiento obtenido correctamente', 
-        data: movimiento 
+      res.json({
+        code: 0,
+        message: 'Movimiento obtenido correctamente',
+        data: movimiento,
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        code: 1, 
-        message: 'Error al obtener movimiento: ' + error.message 
+      res.status(500).json({
+        code: 1,
+        message: 'Error al obtener movimiento: ' + error.message,
       });
     }
   },
@@ -102,82 +102,82 @@ export const MovimientoController = {
 
       // Validaciones de campos obligatorios
       if (!tipo) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo tipo es obligatorio' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo tipo es obligatorio',
         });
       }
 
       if (!nombreProducto) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo nombreProducto es obligatorio' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo nombreProducto es obligatorio',
         });
       }
 
       if (!cantidad) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo cantidad es obligatorio' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo cantidad es obligatorio',
         });
       }
 
       if (!responsable) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo responsable es obligatorio' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo responsable es obligatorio',
         });
       }
 
       // Validaciones de formato
       if (!validarTipo(tipo)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El tipo debe ser "Entrada" o "Salida"' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El tipo debe ser "Entrada" o "Salida"',
         });
       }
 
       if (!validarNombreProducto(nombreProducto)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El nombre del producto debe tener entre 1 y 100 caracteres' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El nombre del producto debe tener entre 1 y 100 caracteres',
         });
       }
 
       if (!validarCantidad(cantidad)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'La cantidad debe ser mayor a 0 y no mayor a 1,000,000' 
+        return res.status(400).json({
+          code: 1,
+          message: 'La cantidad debe ser mayor a 0 y no mayor a 1,000,000',
         });
       }
 
       if (!validarReferencia(referencia)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'La referencia no puede tener más de 200 caracteres' 
+        return res.status(400).json({
+          code: 1,
+          message: 'La referencia no puede tener más de 200 caracteres',
         });
       }
 
       if (!validarId(responsable)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El responsable debe ser un número mayor a 0' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El responsable debe ser un número mayor a 0',
         });
       }
 
       if (id_cliente && !validarId(id_cliente)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El ID del cliente debe ser un número mayor a 0' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El ID del cliente debe ser un número mayor a 0',
         });
       }
 
       const productos = await productoModel.findByNombre(nombreProducto);
-      
+
       if (!productos || productos.length === 0) {
-        return res.status(404).json({ 
-          code: 1, 
-          message: 'Producto no encontrado' 
+        return res.status(404).json({
+          code: 1,
+          message: 'Producto no encontrado',
         });
       }
 
@@ -185,14 +185,16 @@ export const MovimientoController = {
       const producto = productos[0];
 
       if (productos.length > 1) {
-        console.log(`Múltiples productos encontrados para "${nombreProducto}". Usando el primero: ${producto.nombre}`);
+        console.log(
+          `Múltiples productos encontrados para "${nombreProducto}". Usando el primero: ${producto.nombre}`
+        );
       }
 
       // Validar stock suficiente para salidas
       if (tipo === 'Salida' && producto.stock_actual < cantidad) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: `Stock insuficiente. Stock actual: ${producto.stock_actual}, cantidad solicitada: ${cantidad}` 
+        return res.status(400).json({
+          code: 1,
+          message: `Stock insuficiente. Stock actual: ${producto.stock_actual}, cantidad solicitada: ${cantidad}`,
         });
       }
 
@@ -204,7 +206,7 @@ export const MovimientoController = {
         cantidad,
         referencia,
         responsable: parseInt(responsable),
-        id_cliente: id_cliente ? parseInt(id_cliente) : undefined
+        id_cliente: id_cliente ? parseInt(id_cliente) : undefined,
       });
 
       // ✅ ELIMINAR: Ya no necesitamos actualizar el stock manualmente aquí
@@ -213,15 +215,15 @@ export const MovimientoController = {
       // ✅ ELIMINAR: Ya no necesitamos llamar manualmente a verificarAlertaStock
       // porque el modelo MovimientoModel.create() ya lo hace automáticamente
 
-      res.status(201).json({ 
-        code: 0, 
-        message: 'Movimiento creado correctamente', 
-        data: nuevoMovimiento 
+      res.status(201).json({
+        code: 0,
+        message: 'Movimiento creado correctamente',
+        data: nuevoMovimiento,
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        code: 1, 
-        message: 'Error al crear movimiento: ' + error.message 
+      res.status(500).json({
+        code: 1,
+        message: 'Error al crear movimiento: ' + error.message,
       });
     }
   },
@@ -229,18 +231,18 @@ export const MovimientoController = {
   async getByProducto(req: Request, res: Response) {
     try {
       const { nombreProducto } = req.body;
-      
+
       if (!nombreProducto) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El campo nombreProducto es obligatorio en el body' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El campo nombreProducto es obligatorio en el body',
         });
       }
 
       if (!validarNombreProducto(nombreProducto)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El nombre del producto debe tener entre 1 y 100 caracteres' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El nombre del producto debe tener entre 1 y 100 caracteres',
         });
       }
 
@@ -248,38 +250,38 @@ export const MovimientoController = {
 
       // Verificar si el resultado incluye un mensaje especial (sin movimientos)
       if (typeof resultado === 'object' && 'mensaje' in resultado) {
-        return res.json({ 
-          code: 0, 
+        return res.json({
+          code: 0,
           message: resultado.mensaje,
           data: resultado.data,
           total: resultado.data.length,
-          busquedaOriginal: nombreProducto
+          busquedaOriginal: nombreProducto,
         });
       }
 
       const movimientos = resultado as Movimiento[];
-      
+
       if (movimientos.length === 0) {
-        return res.json({ 
-          code: 0, 
+        return res.json({
+          code: 0,
           message: `No se encontraron movimientos para el producto "${nombreProducto}"`,
           data: [],
           total: 0,
-          busquedaOriginal: nombreProducto
+          busquedaOriginal: nombreProducto,
         });
       }
 
-      res.json({ 
-        code: 0, 
+      res.json({
+        code: 0,
         message: `Se encontraron ${movimientos.length} movimiento(s) para el producto "${nombreProducto}"`,
         data: movimientos,
         total: movimientos.length,
-        busquedaOriginal: nombreProducto
+        busquedaOriginal: nombreProducto,
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        code: 1, 
-        message: 'Error al obtener movimientos del producto: ' + error.message 
+      res.status(500).json({
+        code: 1,
+        message: 'Error al obtener movimientos del producto: ' + error.message,
       });
     }
   },
@@ -287,18 +289,18 @@ export const MovimientoController = {
   async getByDateRange(req: Request, res: Response) {
     try {
       const { fechaInicio, fechaFin } = req.body;
-      
+
       if (!fechaInicio || !fechaFin) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'Los campos fechaInicio y fechaFin son obligatorios en el body' 
+        return res.status(400).json({
+          code: 1,
+          message: 'Los campos fechaInicio y fechaFin son obligatorios en el body',
         });
       }
 
       if (!validarFechas(fechaInicio, fechaFin)) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'La fecha de inicio no puede ser mayor a la fecha de fin' 
+        return res.status(400).json({
+          code: 1,
+          message: 'La fecha de inicio no puede ser mayor a la fecha de fin',
         });
       }
 
@@ -306,28 +308,28 @@ export const MovimientoController = {
       const inicio = new Date(fechaInicio);
       const fin = new Date(fechaFin);
       const unAnioEnMs = 365 * 24 * 60 * 60 * 1000;
-      
+
       if (fin.getTime() - inicio.getTime() > unAnioEnMs) {
-        return res.status(400).json({ 
-          code: 1, 
-          message: 'El rango de fechas no puede ser mayor a 1 año' 
+        return res.status(400).json({
+          code: 1,
+          message: 'El rango de fechas no puede ser mayor a 1 año',
         });
       }
 
       const movimientos = await movimientoModel.findByDateRange(inicio, fin);
-      
-      res.json({ 
-        code: 0, 
-        message: 'Movimientos por rango de fecha obtenidos correctamente', 
-        data: movimientos 
+
+      res.json({
+        code: 0,
+        message: 'Movimientos por rango de fecha obtenidos correctamente',
+        data: movimientos,
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        code: 1, 
-        message: 'Error al obtener movimientos por fecha: ' + error.message 
+      res.status(500).json({
+        code: 1,
+        message: 'Error al obtener movimientos por fecha: ' + error.message,
       });
     }
-  }
+  },
 };
 
 // ✅ Agregar endpoint para verificación manual de stock bajo
@@ -335,18 +337,18 @@ export const StockController = {
   async verificarStockBajoManual(req: Request, res: Response) {
     try {
       const alertas = await stockAlertService.verificarStockBajoGeneral();
-      
+
       res.json({
         code: 0,
         success: true,
         message: `Se encontraron ${alertas.length} productos con stock bajo`,
-        data: alertas
+        data: alertas,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
         success: false,
-        message: `Error al verificar stock bajo: ${error.message}`
+        message: `Error al verificar stock bajo: ${error.message}`,
       });
     }
   },
@@ -354,17 +356,17 @@ export const StockController = {
   async obtenerProductosStockBajo(req: Request, res: Response) {
     try {
       const productos = await productoModel.findLowStock();
-      
+
       res.json({
         code: 0,
         message: `Se encontraron ${productos.length} productos con stock bajo`,
-        data: productos
+        data: productos,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
-        message: `Error al obtener productos con stock bajo: ${error.message}`
+        message: `Error al obtener productos con stock bajo: ${error.message}`,
       });
     }
-  }
+  },
 };

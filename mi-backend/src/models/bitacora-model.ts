@@ -25,11 +25,11 @@ export class BitacoraModel {
         JOIN proveedores pr ON b.id_proveedor = pr.id_proveedor
         ORDER BY m.fecha DESC
       `);
-      
+
       if (!result.rows || result.rows.length === 0) {
         throw new Error('No se encontraron registros en la bitácora');
       }
-      
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al obtener todos los registros de bitácora: ${error.message}`);
@@ -127,13 +127,16 @@ export class BitacoraModel {
         throw new Error('El movimiento especificado no existe');
       }
 
-      const result = await this.pool.query(`
+      const result = await this.pool.query(
+        `
         SELECT b.*, p.nombre as producto_nombre, pr.nombre as proveedor_nombre
         FROM bitacora b
         JOIN productos p ON b.id_producto = p.id_producto
         JOIN proveedores pr ON b.id_proveedor = pr.id_proveedor
         WHERE b.id_movimiento = $1
-      `, [id_movimiento]);
+      `,
+        [id_movimiento]
+      );
 
       if (!result.rows) {
         throw new Error('Error al consultar registros de bitácora por movimiento');
@@ -165,14 +168,17 @@ export class BitacoraModel {
         throw new Error('El proveedor especificado no existe');
       }
 
-      const result = await this.pool.query(`
+      const result = await this.pool.query(
+        `
         SELECT b.*, m.tipo, m.fecha, p.nombre as producto_nombre
         FROM bitacora b
         JOIN movimientos m ON b.id_movimiento = m.id_movimiento
         JOIN productos p ON b.id_producto = p.id_producto
         WHERE b.id_proveedor = $1
         ORDER BY m.fecha DESC
-      `, [id_proveedor]);
+      `,
+        [id_proveedor]
+      );
 
       if (!result.rows) {
         throw new Error('Error al consultar registros de bitácora por proveedor');

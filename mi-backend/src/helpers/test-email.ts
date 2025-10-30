@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
   secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 transporter.verify((err, success) => {
@@ -23,7 +23,7 @@ async function testEmail() {
       from: `"Mi App" <${process.env.EMAIL_USER}>`,
       to: 'destino@gmail.com',
       subject: 'Test Nodemailer',
-      html: '<p>Funciona!</p>'
+      html: '<p>Funciona!</p>',
     });
     console.log('✉️ Email enviado:', info.messageId);
   } catch (err: any) {

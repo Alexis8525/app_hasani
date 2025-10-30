@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
   secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 transporter.verify((error, success) => {
@@ -29,7 +29,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
     subject,
     html,
   });
-  
+
   console.log('✉️ Email enviado:', info.messageId);
   return info;
 }

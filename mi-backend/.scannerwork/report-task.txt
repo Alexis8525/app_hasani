@@ -1,0 +1,6 @@
+projectKey=Pro_Hasani
+serverUrl=http://localhost:9000
+serverVersion=25.10.0.114319
+dashboardUrl=http://localhost:9000/dashboard?id=Pro_Hasani
+ceTaskId=557ee50d-4a24-4fd8-a775-a001db0d463f
+ceTaskUrl=http://localhost:9000/api/ce/task?id=557ee50d-4a24-4fd8-a775-a001db0d463f
