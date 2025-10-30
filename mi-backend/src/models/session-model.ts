@@ -19,10 +19,14 @@ export interface ISession {
 export class SessionModel {
   static async create(sessionData: Omit<ISession, 'id' | 'created_at'>): Promise<ISession> {
     const activeSessions = await this.findActiveByUserId(sessionData.user_id);
-    
+
     if (activeSessions.length > 0) {
-      console.log(`❌ BLoqueando nueva sesión - Usuario ${sessionData.user_id} ya tiene sesión activa`);
-      throw new Error('Ya existe una sesión activa para este usuario. Cierre la sesión actual primero.');
+      console.log(
+        `❌ BLoqueando nueva sesión - Usuario ${sessionData.user_id} ya tiene sesión activa`
+      );
+      throw new Error(
+        'Ya existe una sesión activa para este usuario. Cierre la sesión actual primero.'
+      );
     }
 
     const now = new Date();
@@ -45,13 +49,13 @@ export class SessionModel {
         sessionData.longitude,
         expiresAt,
         now,
-        true
+        true,
       ]
     );
-    
+
     const session = result.rows[0];
     console.log('✅ Nueva sesión creada con ID:', session.id);
-    
+
     return session;
   }
 
@@ -77,23 +81,23 @@ export class SessionModel {
        AND s.expires_at AT TIME ZONE 'UTC' > NOW() AT TIME ZONE 'UTC'`,
       [token]
     );
-    
+
     if (result.rows.length > 0) {
       const session = result.rows[0];
       console.log('🔍 Sesión encontrada (UTC):');
       console.log('- Creada:', session.created_at);
       console.log('- Expira:', session.expires_at);
-      
+
       // Verificar validez
       const now = new Date();
       const expiresAt = new Date(session.expires_at);
       const isValid = now < expiresAt;
       console.log('- Válida?:', isValid);
       console.log('- Tiempo restante (min):', (expiresAt.getTime() - now.getTime()) / 60000);
-      
+
       return session;
     }
-    
+
     console.log('❌ Sesión no encontrada o expirada');
     return null;
   }
@@ -108,17 +112,16 @@ export class SessionModel {
        ORDER BY last_activity DESC`,
       [userId]
     );
-    
+
     console.log(`🔍 Encontradas ${result.rows.length} sesiones activas para usuario ${userId}`);
     return result.rows;
   }
 
   // Los demás métodos permanecen igual...
   static async invalidate(token: string): Promise<boolean> {
-    const result = await pool.query(
-      'UPDATE sessions SET is_active = false WHERE token = $1',
-      [token]
-    );
+    const result = await pool.query('UPDATE sessions SET is_active = false WHERE token = $1', [
+      token,
+    ]);
     const affected = (result.rowCount ?? 0) > 0;
     console.log(affected ? '✅ Sesión invalidada' : '❌ Sesión no encontrada para invalidar');
     return affected;

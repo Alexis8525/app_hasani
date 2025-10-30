@@ -17,7 +17,6 @@ import path from 'path';
 import { GlobalValidationMiddleware } from './middleware/globalValidation.middleware';
 import './jobs/stock-alert-job';
 
-
 class Server {
   public app: Application;
 
@@ -28,32 +27,33 @@ class Server {
     this.swaggerDocs();
   }
 
-  
-
   config(): void {
     this.app.set('port', process.env.PORT || 3000);
-  
-    this.app.use(express.json({
-      limit: '50mb',
-      verify: (req: any, res, buf) => {
-        req.rawBody = buf.toString(); // 🔑 útil si manejas firmas digitales o webhooks
-      }
-    }));
+
+    this.app.use(
+      express.json({
+        limit: '50mb',
+        verify: (req: any, res, buf) => {
+          req.rawBody = buf.toString(); // 🔑 útil si manejas firmas digitales o webhooks
+        },
+      })
+    );
     this.app.use(express.urlencoded({ limit: '50mb', extended: true }));
     this.app.use(morgan('dev'));
-  
-    this.app.use(cors({
-      origin: process.env.CLIENT_URL || 'http://localhost:4200',
-      methods: ['GET','POST','PUT','DELETE'],
-      credentials: true
-    }));
-  
+
+    this.app.use(
+      cors({
+        origin: process.env.CLIENT_URL || 'http://localhost:4200',
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true,
+      })
+    );
+
     // Middlewares globales de validación
     this.app.use(GlobalValidationMiddleware.validateContentType);
     this.app.use(GlobalValidationMiddleware.sanitizeInput);
     this.app.use(GlobalValidationMiddleware.validateJSONSyntax);
   }
-  
 
   routes(): void {
     this.app.get('/', (req, res) => res.send('¡Hola, mundo!'));
@@ -70,31 +70,28 @@ class Server {
     this.app.use('*', (req, res) => {
       res.status(404).json({
         code: 1,
-        message: `Ruta no encontrada: ${req.method} ${req.originalUrl}`
+        message: `Ruta no encontrada: ${req.method} ${req.originalUrl}`,
       });
     });
-  
-    this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      console.error('Error global no manejado:', err);
-  
-      res.status(err.status || 500).json({
-        code: 1,
-        message: err.message || 'Error interno del servidor',
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-      });
-    });
+
+    this.app.use(
+      (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        console.error('Error global no manejado:', err);
+
+        res.status(err.status || 500).json({
+          code: 1,
+          message: err.message || 'Error interno del servidor',
+          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+        });
+      }
+    );
   }
-  
 
   swaggerDocs(): void {
     const swaggerPath = path.join(__dirname, './docs/swagger.yaml');
     const swaggerDocument = YAML.load(swaggerPath);
 
-    this.app.use(
-      '/api-docs',
-      swaggerUi.serve,
-      swaggerUi.setup(swaggerDocument)
-    );
+    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
     console.log(`📖 Swagger docs en http://localhost:${this.app.get('port')}/api-docs`);
   }

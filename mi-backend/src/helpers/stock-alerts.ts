@@ -23,15 +23,22 @@ export class StockAlertService {
    * Verifica si después de un movimiento el stock queda por debajo del mínimo
    * y envía alertas si es necesario
    */
-  async verificarAlertaStock(id_producto: number, cantidadMovimiento: number, tipoMovimiento: 'Entrada' | 'Salida'): Promise<void> {
+  async verificarAlertaStock(
+    id_producto: number,
+    cantidadMovimiento: number,
+    tipoMovimiento: 'Entrada' | 'Salida'
+  ): Promise<void> {
     try {
       // Obtener información del producto
-      const productoResult = await this.pool.query(`
+      const productoResult = await this.pool.query(
+        `
         SELECT p.*, pr.nombre as proveedor_nombre
         FROM productos p
         LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor
         WHERE p.id_producto = $1
-      `, [id_producto]);
+      `,
+        [id_producto]
+      );
 
       if (productoResult.rows.length === 0) {
         console.log(`Producto con ID ${id_producto} no encontrado`);
@@ -39,14 +46,15 @@ export class StockAlertService {
       }
 
       const producto = productoResult.rows[0];
-      const stockDespuesMovimiento = tipoMovimiento === 'Entrada' 
-        ? producto.stock_actual + cantidadMovimiento
-        : producto.stock_actual - cantidadMovimiento;
+      const stockDespuesMovimiento =
+        tipoMovimiento === 'Entrada'
+          ? producto.stock_actual + cantidadMovimiento
+          : producto.stock_actual - cantidadMovimiento;
 
       // Verificar si el stock queda por debajo del mínimo
       if (stockDespuesMovimiento < producto.stock_minimo) {
         const diferencia = producto.stock_minimo - stockDespuesMovimiento;
-        
+
         console.log(`⚠️ ALERTA: Producto "${producto.nombre}" quedará con stock bajo`);
         console.log(`   Stock actual: ${producto.stock_actual}`);
         console.log(`   Stock después del movimiento: ${stockDespuesMovimiento}`);
@@ -59,7 +67,7 @@ export class StockAlertService {
           producto_nombre: producto.nombre,
           stock_actual: stockDespuesMovimiento,
           stock_minimo: producto.stock_minimo,
-          diferencia: diferencia
+          diferencia: diferencia,
         });
       }
     } catch (error: any) {
@@ -96,7 +104,6 @@ export class StockAlertService {
           console.error(`❌ Error enviando alerta a ${cliente.email}:`, emailError);
         }
       }
-
     } catch (error: any) {
       console.error('Error enviando alertas de stock:', error.message);
     }
@@ -165,7 +172,7 @@ export class StockAlertService {
 
       if (alertas.length > 0) {
         console.log(`📊 Encontrados ${alertas.length} productos con stock bajo`);
-        
+
         // Enviar alerta resumen
         await this.enviarAlertaResumen(alertas);
       }
@@ -210,14 +217,18 @@ export class StockAlertService {
    * Genera el HTML para el resumen de alertas
    */
   private generarHTMLResumen(alertas: AlertaStock[]): string {
-    const productosHTML = alertas.map(alerta => `
+    const productosHTML = alertas
+      .map(
+        (alerta) => `
       <tr>
         <td>${alerta.producto_nombre}</td>
         <td style="color: #ff4444; font-weight: bold;">${alerta.stock_actual}</td>
         <td>${alerta.stock_minimo}</td>
         <td style="color: #ff4444; font-weight: bold;">${alerta.diferencia}</td>
       </tr>
-    `).join('');
+    `
+      )
+      .join('');
 
     return `
       <!DOCTYPE html>

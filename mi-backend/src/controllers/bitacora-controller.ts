@@ -31,12 +31,12 @@ export const BitacoraController = {
       res.json({
         code: 0,
         message: 'Bitácora obtenida correctamente',
-        data: bitacora
+        data: bitacora,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
-        message: 'Error al obtener bitácora: ' + error.message
+        message: 'Error al obtener bitácora: ' + error.message,
       });
     }
   },
@@ -46,11 +46,16 @@ export const BitacoraController = {
       const { id_movimiento, id_proveedor, cantidad, id_producto } = req.body;
 
       // Validar campos obligatorios
-      const campoFaltante = validarCamposObligatorios({ id_movimiento, id_proveedor, cantidad, id_producto });
+      const campoFaltante = validarCamposObligatorios({
+        id_movimiento,
+        id_proveedor,
+        cantidad,
+        id_producto,
+      });
       if (campoFaltante) {
         return res.status(400).json({
           code: 1,
-          message: `El campo ${campoFaltante} es obligatorio`
+          message: `El campo ${campoFaltante} es obligatorio`,
         });
       }
 
@@ -58,21 +63,21 @@ export const BitacoraController = {
       if (!validarId(id_movimiento)) {
         return res.status(400).json({
           code: 1,
-          message: 'El ID del movimiento debe ser un número mayor a 0'
+          message: 'El ID del movimiento debe ser un número mayor a 0',
         });
       }
 
       if (!validarId(id_proveedor)) {
         return res.status(400).json({
           code: 1,
-          message: 'El ID del proveedor debe ser un número mayor a 0'
+          message: 'El ID del proveedor debe ser un número mayor a 0',
         });
       }
 
       if (!validarId(id_producto)) {
         return res.status(400).json({
           code: 1,
-          message: 'El ID del producto debe ser un número mayor a 0'
+          message: 'El ID del producto debe ser un número mayor a 0',
         });
       }
 
@@ -80,7 +85,7 @@ export const BitacoraController = {
       if (!validarCantidad(cantidad)) {
         return res.status(400).json({
           code: 1,
-          message: 'La cantidad debe ser mayor a 0 y no mayor a 1,000,000'
+          message: 'La cantidad debe ser mayor a 0 y no mayor a 1,000,000',
         });
       }
 
@@ -88,18 +93,18 @@ export const BitacoraController = {
         id_movimiento: parseInt(id_movimiento),
         id_proveedor: parseInt(id_proveedor),
         cantidad: parseInt(cantidad),
-        id_producto: parseInt(id_producto)
+        id_producto: parseInt(id_producto),
       });
 
       res.status(201).json({
         code: 0,
         message: 'Registro de bitácora creado correctamente',
-        data: nuevoRegistro
+        data: nuevoRegistro,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
-        message: 'Error al crear registro de bitácora: ' + error.message
+        message: 'Error al crear registro de bitácora: ' + error.message,
       });
     }
   },
@@ -111,14 +116,14 @@ export const BitacoraController = {
       if (!movimientoId) {
         return res.status(400).json({
           code: 1,
-          message: 'El campo movimientoId es obligatorio en el body'
+          message: 'El campo movimientoId es obligatorio en el body',
         });
       }
 
       if (!validarId(movimientoId)) {
         return res.status(400).json({
           code: 1,
-          message: 'El ID del movimiento debe ser un número mayor a 0'
+          message: 'El ID del movimiento debe ser un número mayor a 0',
         });
       }
 
@@ -128,12 +133,12 @@ export const BitacoraController = {
       res.json({
         code: 0,
         message: 'Registros de bitácora por movimiento obtenidos correctamente',
-        data: registros
+        data: registros,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
-        message: 'Error al obtener registros por movimiento: ' + error.message
+        message: 'Error al obtener registros por movimiento: ' + error.message,
       });
     }
   },
@@ -145,14 +150,14 @@ export const BitacoraController = {
       if (!proveedorId) {
         return res.status(400).json({
           code: 1,
-          message: 'El campo proveedorId es obligatorio en el body'
+          message: 'El campo proveedorId es obligatorio en el body',
         });
       }
 
       if (!validarId(proveedorId)) {
         return res.status(400).json({
           code: 1,
-          message: 'El ID del proveedor debe ser un número mayor a 0'
+          message: 'El ID del proveedor debe ser un número mayor a 0',
         });
       }
 
@@ -162,13 +167,13 @@ export const BitacoraController = {
       res.json({
         code: 0,
         message: 'Registros de bitácora por proveedor obtenidos correctamente',
-        data: registros
+        data: registros,
       });
     } catch (error: any) {
       res.status(500).json({
         code: 1,
-        message: 'Error al obtener registros por proveedor: ' + error.message
+        message: 'Error al obtener registros por proveedor: ' + error.message,
       });
     }
-  }
+  },
 };

@@ -3,8 +3,6 @@ import { Pool } from 'pg';
 import { ProductoModel } from './productos-model';
 import { StockAlertService } from '../helpers/stock-alerts';
 
-
-
 export interface Movimiento {
   id_movimiento: number;
   fecha: Date;
@@ -27,7 +25,6 @@ export class MovimientoModel {
     this.productoModel = new ProductoModel(pool);
     this.stockAlertService = new StockAlertService(pool);
   }
-  
 
   async findAll(): Promise<Movimiento[]> {
     try {
@@ -39,11 +36,11 @@ export class MovimientoModel {
         LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
         ORDER BY m.fecha DESC
       `);
-      
+
       if (!result.rows || result.rows.length === 0) {
         throw new Error('No se encontraron movimientos en la base de datos');
       }
-      
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al obtener todos los movimientos: ${error.message}`);
@@ -56,27 +53,32 @@ export class MovimientoModel {
         throw new Error('El ID debe ser un número mayor a 0');
       }
 
-      const result = await this.pool.query(`
+      const result = await this.pool.query(
+        `
         SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
         FROM movimientos m
         JOIN productos p ON m.id_producto = p.id_producto
         JOIN users u ON m.responsable = u.id
         LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
         WHERE m.id_movimiento = $1
-      `, [id]);
-      
+      `,
+        [id]
+      );
+
       return result.rows[0] || null;
     } catch (error: any) {
       throw new Error(`Error al buscar movimiento por ID: ${error.message}`);
     }
   }
 
-  async create(movimiento: Omit<Movimiento, 'id_movimiento' | 'fecha' | 'created_at'>): Promise<Movimiento> {
+  async create(
+    movimiento: Omit<Movimiento, 'id_movimiento' | 'fecha' | 'created_at'>
+  ): Promise<Movimiento> {
     const client = await this.pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       const { tipo, id_producto, cantidad, referencia, responsable, id_cliente } = movimiento;
 
       // Validaciones existentes...
@@ -130,7 +132,9 @@ export class MovimientoModel {
 
       // 2. Verificar que para salidas haya suficiente stock
       if (tipo === 'Salida' && stockActual < cantidad) {
-        throw new Error(`Stock insuficiente. Stock actual: ${stockActual}, Cantidad solicitada: ${cantidad}`);
+        throw new Error(
+          `Stock insuficiente. Stock actual: ${stockActual}, Cantidad solicitada: ${cantidad}`
+        );
       }
 
       // 3. Crear el movimiento
@@ -147,9 +151,7 @@ export class MovimientoModel {
       const movimientoCreado = result.rows[0];
 
       // 4. Actualizar el stock del producto
-      const nuevoStock = tipo === 'Entrada' 
-        ? stockActual + cantidad 
-        : stockActual - cantidad;
+      const nuevoStock = tipo === 'Entrada' ? stockActual + cantidad : stockActual - cantidad;
 
       await client.query(
         'UPDATE productos SET stock_actual = $1, updated_at = NOW() WHERE id_producto = $2',
@@ -160,9 +162,8 @@ export class MovimientoModel {
       await this.stockAlertService.verificarAlertaStock(id_producto, cantidad, tipo);
 
       await client.query('COMMIT');
-      
+
       return movimientoCreado;
-      
     } catch (error: any) {
       await client.query('ROLLBACK');
       throw new Error(`Error al crear movimiento: ${error.message}`);
@@ -171,8 +172,9 @@ export class MovimientoModel {
     }
   }
 
-
-  async findByProductoNombre(nombreProducto: string): Promise<Movimiento[] | { mensaje: string, data: Movimiento[] }> {
+  async findByProductoNombre(
+    nombreProducto: string
+  ): Promise<Movimiento[] | { mensaje: string; data: Movimiento[] }> {
     try {
       if (!nombreProducto || nombreProducto.trim().length === 0) {
         throw new Error('El nombre del producto no puede estar vacío');
@@ -184,16 +186,17 @@ export class MovimientoModel {
 
       // Búsqueda con LIKE para coincidencias parciales
       const productos = await this.productoModel.findByNombre(nombreProducto);
-      
+
       if (!productos || productos.length === 0) {
         throw new Error('No se encontraron productos con ese nombre');
       }
 
       // Si encontramos múltiples productos, buscamos movimientos para todos ellos
       let movimientos: Movimiento[] = [];
-      
+
       for (const producto of productos) {
-        const result = await this.pool.query(`
+        const result = await this.pool.query(
+          `
           SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
           FROM movimientos m
           JOIN productos p ON m.id_producto = p.id_producto
@@ -201,7 +204,9 @@ export class MovimientoModel {
           LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
           WHERE m.id_producto = $1
           ORDER BY m.fecha DESC
-        `, [producto.id_producto]);
+        `,
+          [producto.id_producto]
+        );
 
         if (result.rows && result.rows.length > 0) {
           movimientos = movimientos.concat(result.rows);
@@ -213,12 +218,12 @@ export class MovimientoModel {
         if (productos.length === 1) {
           return {
             mensaje: `No se encontraron movimientos para el producto "${nombreProducto}"`,
-            data: []
+            data: [],
           };
         } else {
           return {
             mensaje: `No se encontraron movimientos para los productos relacionados con "${nombreProducto}"`,
-            data: []
+            data: [],
           };
         }
       }
@@ -252,7 +257,8 @@ export class MovimientoModel {
         throw new Error('El rango de fechas no puede ser mayor a 1 año');
       }
 
-      const result = await this.pool.query(`
+      const result = await this.pool.query(
+        `
         SELECT m.*, p.nombre as producto_nombre, u.email as responsable_nombre, c.nombre as cliente_nombre
         FROM movimientos m
         JOIN productos p ON m.id_producto = p.id_producto
@@ -260,7 +266,9 @@ export class MovimientoModel {
         LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
         WHERE m.fecha BETWEEN $1 AND $2
         ORDER BY m.fecha DESC
-      `, [fechaInicio, fechaFin]);
+      `,
+        [fechaInicio, fechaFin]
+      );
 
       if (!result.rows) {
         throw new Error('Error al consultar movimientos por rango de fechas');

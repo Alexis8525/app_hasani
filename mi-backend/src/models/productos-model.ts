@@ -30,11 +30,11 @@ export class ProductoModel {
         LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor 
         ORDER BY p.nombre ASC
       `);
-      
+
       if (!result.rows || result.rows.length === 0) {
         throw new Error('No se encontraron productos en la base de datos');
       }
-      
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al obtener todos los productos: ${error.message}`);
@@ -42,52 +42,66 @@ export class ProductoModel {
   }
 
   // En el modelo de productos
-async findByNombre(nombre: string): Promise<Producto[] | null> {
-  try {
-    if (!nombre || nombre.trim().length === 0) {
-      throw new Error('El nombre no puede estar vacío');
-    }
+  async findByNombre(nombre: string): Promise<Producto[] | null> {
+    try {
+      if (!nombre || nombre.trim().length === 0) {
+        throw new Error('El nombre no puede estar vacío');
+      }
 
-    if (nombre.length > 100) {
-      throw new Error('El nombre no puede tener más de 100 caracteres');
-    }
+      if (nombre.length > 100) {
+        throw new Error('El nombre no puede tener más de 100 caracteres');
+      }
 
-    // Búsqueda con LIKE para coincidencias parciales
-    const result = await this.pool.query(`
+      // Búsqueda con LIKE para coincidencias parciales
+      const result = await this.pool.query(
+        `
       SELECT p.*, pr.nombre as nombre_proveedor 
       FROM productos p 
       LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor 
       WHERE p.nombre ILIKE $1
       ORDER BY p.nombre ASC
-    `, [`%${nombre}%`]);
-    
-    if (result.rows.length === 0) {
-      // Si no encuentra coincidencias, devuelve todos los productos con un mensaje
-      const allProducts = await this.pool.query(`
+    `,
+        [`%${nombre}%`]
+      );
+
+      if (result.rows.length === 0) {
+        // Si no encuentra coincidencias, devuelve todos los productos con un mensaje
+        const allProducts = await this.pool.query(`
         SELECT p.*, pr.nombre as nombre_proveedor 
         FROM productos p 
         LEFT JOIN proveedores pr ON p.id_proveedor = pr.id_proveedor 
         ORDER BY p.nombre ASC
       `);
-      
-      if (!allProducts.rows || allProducts.rows.length === 0) {
-        throw new Error('No hay productos registrados en el sistema');
-      }
-      
-      // Devolvemos los productos pero indicamos que fue una búsqueda sin resultados específicos
-      // El controlador manejará el mensaje apropiado
-      return allProducts.rows;
-    }
-    
-    return result.rows;
-  } catch (error: any) {
-    throw new Error(`Error al buscar producto por nombre: ${error.message}`);
-  }
-}
 
-  async create(producto: Omit<Producto, 'id_producto' | 'created_at' | 'updated_at'>): Promise<Producto> {
+        if (!allProducts.rows || allProducts.rows.length === 0) {
+          throw new Error('No hay productos registrados en el sistema');
+        }
+
+        // Devolvemos los productos pero indicamos que fue una búsqueda sin resultados específicos
+        // El controlador manejará el mensaje apropiado
+        return allProducts.rows;
+      }
+
+      return result.rows;
+    } catch (error: any) {
+      throw new Error(`Error al buscar producto por nombre: ${error.message}`);
+    }
+  }
+
+  async create(
+    producto: Omit<Producto, 'id_producto' | 'created_at' | 'updated_at'>
+  ): Promise<Producto> {
     try {
-      const { codigo, nombre, descripcion, categoria, unidad, stock_minimo, stock_actual, id_proveedor } = producto;
+      const {
+        codigo,
+        nombre,
+        descripcion,
+        categoria,
+        unidad,
+        stock_minimo,
+        stock_actual,
+        id_proveedor,
+      } = producto;
 
       // Validaciones de campos obligatorios
       if (!codigo || codigo.trim().length === 0) {
@@ -139,7 +153,16 @@ async findByNombre(nombre: string): Promise<Producto[] | null> {
       const result = await this.pool.query(
         `INSERT INTO productos (codigo, nombre, descripcion, categoria, unidad, stock_minimo, stock_actual, id_proveedor) 
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-        [codigo.trim(), nombre.trim(), descripcion, categoria, unidad.trim(), stock_minimo, stock_actual, id_proveedor]
+        [
+          codigo.trim(),
+          nombre.trim(),
+          descripcion,
+          categoria,
+          unidad.trim(),
+          stock_minimo,
+          stock_actual,
+          id_proveedor,
+        ]
       );
 
       if (!result.rows || result.rows.length === 0) {
@@ -152,7 +175,10 @@ async findByNombre(nombre: string): Promise<Producto[] | null> {
     }
   }
 
-  async update(nombre: string, producto: Partial<Omit<Producto, 'id_producto' | 'created_at' | 'updated_at'>>): Promise<Producto | null> {
+  async update(
+    nombre: string,
+    producto: Partial<Omit<Producto, 'id_producto' | 'created_at' | 'updated_at'>>
+  ): Promise<Producto | null> {
     try {
       if (!nombre || nombre.trim().length === 0) {
         throw new Error('El nombre es obligatorio para la actualización');
@@ -162,7 +188,8 @@ async findByNombre(nombre: string): Promise<Producto[] | null> {
         throw new Error('El nombre no puede tener más de 100 caracteres');
       }
 
-      const { codigo, descripcion, categoria, unidad, stock_minimo, stock_actual, id_proveedor } = producto;
+      const { codigo, descripcion, categoria, unidad, stock_minimo, stock_actual, id_proveedor } =
+        producto;
 
       // Validaciones de longitud
       if (codigo && codigo.length > 50) {
@@ -229,11 +256,11 @@ async findByNombre(nombre: string): Promise<Producto[] | null> {
       }
 
       const result = await this.pool.query('DELETE FROM productos WHERE nombre = $1', [nombre]);
-      
+
       if ((result.rowCount ?? 0) === 0) {
         throw new Error('No se encontró el producto para eliminar');
       }
-      
+
       return (result.rowCount ?? 0) > 0;
     } catch (error: any) {
       throw new Error(`Error al eliminar producto: ${error.message}`);

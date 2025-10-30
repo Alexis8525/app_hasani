@@ -6,7 +6,12 @@ import crypto from 'crypto';
 import { UserModel } from '../models/user-models';
 import { SessionModel } from '../models/session-model';
 import { PasswordResetModel } from '../models/passwordReset-model';
-import { generateOTP, generateTempToken, generateToken, extractJwtSignature } from '../helpers/security';
+import {
+  generateOTP,
+  generateTempToken,
+  generateToken,
+  extractJwtSignature,
+} from '../helpers/security';
 import { sendEmail, sendSMS } from '../helpers/notify';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
@@ -22,15 +27,15 @@ export class AuthController {
       // ✅ VERIFICAR SI YA TIENE SESIÓN ACTIVA - BLOQUEAR si existe
       const activeSessions = await SessionModel.findActiveByUserId(user.id);
       if (activeSessions.length > 0) {
-        return res.status(409).json({ 
+        return res.status(409).json({
           message: 'Ya hay una sesión activa. Cierre la sesión actual antes de iniciar una nueva.',
           code: 'ACTIVE_SESSION_EXISTS',
           existing_session: {
             id: activeSessions[0].id,
             created_at: activeSessions[0].created_at,
             device_info: activeSessions[0].device_info,
-            ip_address: activeSessions[0].ip_address
-          }
+            ip_address: activeSessions[0].ip_address,
+          },
         });
       }
       // Solo si NO tiene sesión activa, continuar...
@@ -38,33 +43,37 @@ export class AuthController {
         const otp = generateOTP(6);
         const offlinePin = generateOTP(6);
         const tempToken = generateTempToken({ id: user.id, type: '2fa' });
-        
+
         await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5, lat, lng, offlinePin);
         try {
           if (user.email) {
-            await sendEmail(user.email, 'Tu código 2FA', `
+            await sendEmail(
+              user.email,
+              'Tu código 2FA',
+              `
               <p>Tu código 2FA: <b>${otp}</b></p>
               <p>Token temporal: <b>${tempToken}</b></p>
-            `);
+            `
+            );
           }
           if (user.phone) {
             await sendSMS(user.phone, `Código 2FA: ${otp}`);
           }
         } catch (err) {
           console.warn('No se pudo enviar notificación online');
-        }  
+        }
         return res.status(200).json({
           message: '2FA requerido',
           requires2fa: true,
           tempToken,
-          offlinePin
+          offlinePin,
         });
       }
       // Usuario sin 2FA
-      const token = generateToken({ 
-        id: user.id, 
+      const token = generateToken({
+        id: user.id,
         role: user.role,
-        session_type: 'online'
+        session_type: 'online',
       });
       const tokenIdentifier = extractJwtSignature(token);
       const session = await SessionModel.create({
@@ -76,7 +85,7 @@ export class AuthController {
         latitude: lat,
         longitude: lng,
         expires_at: new Date(Date.now() + 60 * 60 * 1000),
-        last_activity: new Date()
+        last_activity: new Date(),
       });
       return res.json({
         message: 'Login exitoso',
@@ -85,18 +94,18 @@ export class AuthController {
         session: {
           id: session.id,
           created_at: session.created_at,
-          expires_at: session.expires_at
-        }
+          expires_at: session.expires_at,
+        },
       });
     } catch (err: any) {
       // ✅ Capturar el error de "sesión ya activa"
       if (err.message.includes('Ya existe una sesión activa')) {
-        return res.status(409).json({ 
+        return res.status(409).json({
           message: err.message,
-          code: 'ACTIVE_SESSION_EXISTS'
+          code: 'ACTIVE_SESSION_EXISTS',
         });
       }
-      
+
       console.error(err);
       res.status(500).json({ message: 'Error en login', error: err.message });
     }
@@ -107,18 +116,23 @@ export class AuthController {
     try {
       console.log('TempToken recibido:', tempToken);
       console.log('OTP recibido:', otp);
-      const reset = await PasswordResetModel.findValidByTokenAndOtp(tempToken, '2fa', String(otp).trim());
-      if (!reset) return res.status(400).json({ message: 'Token o código 2FA inválido o expirado' });
+      const reset = await PasswordResetModel.findValidByTokenAndOtp(
+        tempToken,
+        '2fa',
+        String(otp).trim()
+      );
+      if (!reset)
+        return res.status(400).json({ message: 'Token o código 2FA inválido o expirado' });
       await PasswordResetModel.markUsed(reset.id);
       const userData = await UserModel.findById(reset.user_id);
       if (!userData || !userData.id) {
         return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
       }
       // Generar token final y crear sesión
-      const finalToken = generateToken({ 
-        id: userData.id, 
+      const finalToken = generateToken({
+        id: userData.id,
         role: userData.role,
-        session_type: 'online'
+        session_type: 'online',
       });
       const tokenIdentifier = extractJwtSignature(finalToken);
       const now = new Date(); // UTC implícito
@@ -132,9 +146,9 @@ export class AuthController {
         latitude: lat,
         longitude: lng,
         expires_at: expiresAt, // siempre después de created_at
-        last_activity: now
+        last_activity: now,
       });
-      
+
       res.json({
         message: '2FA verificado',
         token: finalToken,
@@ -142,8 +156,8 @@ export class AuthController {
         session: {
           id: session.id,
           created_at: session.created_at,
-          expires_at: session.expires_at
-        }
+          expires_at: session.expires_at,
+        },
       });
     } catch (err: any) {
       console.error(err);
@@ -173,10 +187,10 @@ export class AuthController {
         return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
       }
       // Generar token de sesión offline
-      const token = generateToken({ 
-        id: userData.id, 
+      const token = generateToken({
+        id: userData.id,
         role: userData.role,
-        session_type: 'offline'
+        session_type: 'offline',
       });
       const tokenIdentifier = extractJwtSignature(token);
       const now = new Date(); // UTC implícito
@@ -190,7 +204,7 @@ export class AuthController {
         latitude: lat,
         longitude: lng,
         expires_at: expiresAt, // siempre después de created_at
-        last_activity: now
+        last_activity: now,
       });
       res.json({
         message: 'Login offline exitoso',
@@ -200,10 +214,9 @@ export class AuthController {
           id: session.id,
           created_at: session.created_at,
           expires_at: session.expires_at,
-          session_type: 'offline'
-        }
+          session_type: 'offline',
+        },
       });
-  
     } catch (err: any) {
       console.error('Error en verifyOffline:', err);
       res.status(500).json({ message: 'Error verificando PIN offline', error: err.message });
@@ -214,13 +227,18 @@ export class AuthController {
     const { email, via = 'email' } = req.body;
     try {
       const user = await UserModel.findByEmailFull(email);
-      if (!user) return res.status(200).json({ message: 'Si existe la cuenta, se enviará un correo' });
+      if (!user)
+        return res.status(200).json({ message: 'Si existe la cuenta, se enviará un correo' });
       const tokenPlain = crypto.randomBytes(32).toString('hex');
       const otp = via === 'sms' ? generateOTP(6) : undefined;
       await PasswordResetModel.create(user.id, tokenPlain, 'reset', otp, 30);
       const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
       if (via === 'email') {
-        await sendEmail(user.email, 'Restablecer contraseña', `<p>Este es tu token= <a>${tokenPlain} </a></p>`);
+        await sendEmail(
+          user.email,
+          'Restablecer contraseña',
+          `<p>Este es tu token= <a>${tokenPlain} </a></p>`
+        );
       } else if (via === 'sms' && user.phone) {
         await sendSMS(user.phone, `Código para restablecer: ${otp}`);
       }
@@ -255,12 +273,20 @@ export class AuthController {
       if (emailOrPhone.includes('@')) {
         userData = await UserModel.findByEmail(emailOrPhone);
       } else {
-        const result = await pool.query('SELECT id, email, phone FROM users WHERE phone=$1 LIMIT 1', [emailOrPhone]);
+        const result = await pool.query(
+          'SELECT id, email, phone FROM users WHERE phone=$1 LIMIT 1',
+          [emailOrPhone]
+        );
         userData = result.rows[0];
       }
-      if (!userData) return res.status(200).json({ message: 'Si existe, recibirás la información' });
+      if (!userData)
+        return res.status(200).json({ message: 'Si existe, recibirás la información' });
       if (userData.email) {
-        await sendEmail(userData.email, 'Recuperación de usuario', `<p>Tu usuario: <b>${userData.email}</b></p>`);
+        await sendEmail(
+          userData.email,
+          'Recuperación de usuario',
+          `<p>Tu usuario: <b>${userData.email}</b></p>`
+        );
       }
       if (userData.phone) {
         await sendSMS(userData.phone, `Tu usuario: ${userData.email}`);
@@ -276,7 +302,7 @@ export class AuthController {
   static async logout(req: AuthenticatedRequest, res: Response) {
     try {
       const token = req.headers['authorization']?.split(' ')[1];
-      
+
       if (token) {
         await SessionModel.invalidate(token);
       }
@@ -289,22 +315,25 @@ export class AuthController {
   static async getActiveSessions(req: AuthenticatedRequest, res: Response) {
     try {
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
-      
-      const safeSessions = sessions.map(session => ({
+
+      const safeSessions = sessions.map((session) => ({
         id: session.id,
         device_info: session.device_info,
         ip_address: session.ip_address,
         created_at: session.created_at,
         last_activity: session.last_activity,
         expires_at: session.expires_at,
-        location: session.latitude && session.longitude ? {
-          lat: session.latitude,
-          lng: session.longitude
-        } : null
+        location:
+          session.latitude && session.longitude
+            ? {
+                lat: session.latitude,
+                lng: session.longitude,
+              }
+            : null,
       }));
       res.json({
         sessions: safeSessions,
-        total: safeSessions.length
+        total: safeSessions.length,
       });
     } catch (err: any) {
       console.error(err);
@@ -330,9 +359,9 @@ export class AuthController {
     try {
       const { sessionId } = req.params;
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
-      
-      const sessionToLogout = sessions.find(s => s.id === parseInt(sessionId));
-      
+
+      const sessionToLogout = sessions.find((s) => s.id === parseInt(sessionId));
+
       if (!sessionToLogout) {
         return res.status(404).json({ message: 'Sesión no encontrada' });
       }
@@ -346,15 +375,15 @@ export class AuthController {
   static async refreshToken(req: AuthenticatedRequest, res: Response) {
     try {
       const oldToken = req.headers['authorization']?.split(' ')[1];
-      
+
       if (!oldToken) {
         return res.status(400).json({ message: 'Token requerido' });
       }
       await SessionModel.invalidate(oldToken);
-      const newToken = generateToken({ 
-        id: req.user.id, 
+      const newToken = generateToken({
+        id: req.user.id,
         role: req.user.role,
-        session_type: 'online'
+        session_type: 'online',
       });
       const tokenIdentifier = extractJwtSignature(newToken);
       const now = new Date(); // UTC implícito
@@ -368,12 +397,12 @@ export class AuthController {
         latitude: req.session?.latitude,
         longitude: req.session?.longitude,
         expires_at: expiresAt, // siempre después de created_at
-        last_activity: now
+        last_activity: now,
       });
       res.json({
         message: 'Token renovado',
         token: newToken,
-        expires_at: session.expires_at
+        expires_at: session.expires_at,
       });
     } catch (err: any) {
       console.error(err);

@@ -19,11 +19,11 @@ export class ClienteModel {
   async findAll(): Promise<Cliente[]> {
     try {
       const result = await this.pool.query('SELECT * FROM clientes ORDER BY nombre ASC');
-      
+
       if (!result.rows || result.rows.length === 0) {
         throw new Error('No se encontraron clientes en la base de datos');
       }
-      
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al obtener todos los clientes: ${error.message}`);
@@ -40,22 +40,21 @@ export class ClienteModel {
         throw new Error('El nombre no puede tener más de 100 caracteres');
       }
 
-      const result = await this.pool.query(
-        'SELECT * FROM clientes WHERE nombre ILIKE $1',
-        [nombre]
-      );
-    
+      const result = await this.pool.query('SELECT * FROM clientes WHERE nombre ILIKE $1', [
+        nombre,
+      ]);
+
       // Si no hay coincidencias, devuelve todos los registros
       if (result.rows.length === 0) {
         const all = await this.pool.query('SELECT * FROM clientes');
-        
+
         if (!all.rows || all.rows.length === 0) {
           throw new Error('No hay clientes registrados en el sistema');
         }
-        
+
         return all.rows;
       }
-    
+
       return result.rows;
     } catch (error: any) {
       throw new Error(`Error al buscar cliente por nombre: ${error.message}`);
@@ -101,7 +100,10 @@ export class ClienteModel {
     }
   }
 
-  async update(nombre: string, cliente: Partial<Omit<Cliente, 'id_cliente'>>): Promise<Cliente | null> {
+  async update(
+    nombre: string,
+    cliente: Partial<Omit<Cliente, 'id_cliente'>>
+  ): Promise<Cliente | null> {
     try {
       if (!nombre || nombre.trim().length === 0) {
         throw new Error('El nombre es obligatorio para la actualización');
@@ -147,11 +149,11 @@ export class ClienteModel {
       }
 
       const result = await this.pool.query('DELETE FROM clientes WHERE nombre = $1', [nombre]);
-      
+
       if ((result.rowCount ?? 0) === 0) {
         throw new Error('No se encontró el cliente para eliminar');
       }
-      
+
       return (result.rowCount ?? 0) > 0;
     } catch (error: any) {
       throw new Error(`Error al eliminar cliente: ${error.message}`);
@@ -165,7 +167,7 @@ export class ClienteModel {
       }
 
       const result = await this.pool.query(
-        'SELECT * FROM clientes WHERE id_user = $1 ORDER BY nombre ASC', 
+        'SELECT * FROM clientes WHERE id_user = $1 ORDER BY nombre ASC',
         [id_user]
       );
 
