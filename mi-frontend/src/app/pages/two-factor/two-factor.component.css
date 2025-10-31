@@ -1,0 +1,210 @@
+/* ==== Contenedor principal ==== */
+.twofa-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem;
+  }
+  
+  /* ==== Tarjeta principal ==== */
+  .twofa-card {
+    background: #fff;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .twofa-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+  }
+  
+  /* ==== Encabezados ==== */
+  .twofa-card h3 {
+    font-size: 1.6rem;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  
+  .twofa-card p {
+    color: #666;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* ==== Email del usuario ==== */
+  .user-email {
+    background: #f1f3f8;
+    border-radius: 8px;
+    padding: 0.6rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    color: #444;
+  }
+  
+  /* ==== Inputs y formularios ==== */
+  .form-group {
+    text-align: left;
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-group label {
+    font-weight: 500;
+    color: #555;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1.1rem;
+    text-align: center;
+    letter-spacing: 3px;
+    font-family: monospace;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+    outline: none;
+  }
+  
+  .form-control.is-invalid {
+    border-color: #dc3545;
+  }
+  
+  /* ==== Mensajes ==== */
+  .error-message {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  
+  .alert-info {
+    background-color: #e9f7ff;
+    color: #0c5460;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #b8daff;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    border: 1px solid #f5c6cb;
+  }
+  
+  /* ==== PIN Offline ==== */
+  .offline-pin {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-weight: bold;
+  }
+  
+  /* ==== Botones ==== */
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-primary {
+    background-color: #667eea;
+    color: #fff;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background-color: #5a6fd8;
+  }
+  
+  .btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+    margin-top: 0.75rem;
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+  }
+  
+  .btn-resend {
+    background: none;
+    border: 1px solid #667eea;
+    color: #667eea;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.75rem;
+  }
+  
+  .btn-resend:hover:not(:disabled) {
+    background-color: #667eea;
+    color: #fff;
+  }
+  
+  .btn-resend:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .btn-link {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+    display: block;
+    margin-top: 0.75rem;
+  }
+  
+  .btn-link:hover {
+    color: #5a6fd8;
+  }
+  
+  /* ==== Token info (opcional) ==== */
+  .token-info {
+    background: #f1f3f8;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: #555;
+  }
+  
+  /* ==== Responsividad ==== */
+  @media (max-width: 480px) {
+    .twofa-card {
+      padding: 1.5rem;
+    }
+  
+    .twofa-card h3 {
+      font-size: 1.4rem;
+    }
+  }
+  

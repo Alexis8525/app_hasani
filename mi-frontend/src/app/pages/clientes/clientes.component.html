@@ -1,1 +1,158 @@
-<p>clientes works!</p>
+<!-- clientes.component.html -->
+<div class="clientes-container">
+    <h2>Gestión de Clientes</h2>
+  
+    <!-- Mensajes de estado -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      {{ errorMessage }}
+    </div>
+  
+    <div *ngIf="successMessage" class="alert alert-success">
+      {{ successMessage }}
+    </div>
+  
+    <!-- Formulario de búsqueda -->
+    <div class="search-section">
+      <h3>Buscar Clientes</h3>
+      <form [formGroup]="searchForm" (ngSubmit)="searchByNombre()" class="search-form">
+        <div class="form-group">
+          <label for="searchTerm">Buscar por nombre:</label>
+          <input
+            id="searchTerm"
+            type="text"
+            formControlName="searchTerm"
+            placeholder="Ingrese nombre del cliente..."
+            class="form-control"
+          />
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            {{ isLoading ? 'Buscando...' : 'Buscar' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="searchByUser()" [disabled]="isLoading">
+            Mis Clientes
+          </button>
+          <button type="button" class="btn btn-link" (click)="resetSearch()" [disabled]="isLoading">
+            Ver Todos
+          </button>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Formulario de creación/edición -->
+    <div class="form-section">
+      <h3>{{ isEditing ? 'Editar Cliente' : 'Nuevo Cliente' }}</h3>
+      <form [formGroup]="clienteForm" (ngSubmit)="isEditing ? onUpdate() : onCreate()" class="client-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('nombre')"
+              [readonly]="isEditing"
+            />
+            <div *ngIf="isFieldInvalid('nombre')" class="error-message">
+              {{ getFieldError('nombre') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="telefono">Teléfono</label>
+            <input
+              id="telefono"
+              type="text"
+              formControlName="telefono"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('telefono')"
+              placeholder="10 dígitos"
+            />
+            <div *ngIf="isFieldInvalid('telefono')" class="error-message">
+              {{ getFieldError('telefono') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="contacto">Contacto</label>
+            <input
+              id="contacto"
+              type="text"
+              formControlName="contacto"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('contacto')"
+            />
+            <div *ngIf="isFieldInvalid('contacto')" class="error-message">
+              {{ getFieldError('contacto') }}
+            </div>
+          </div>
+        </div>
+  
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            [disabled]="isLoading || clienteForm.invalid"
+          >
+            {{ isLoading ? 'Procesando...' : (isEditing ? 'Actualizar' : 'Crear') }}
+          </button>
+          
+          <button 
+            *ngIf="isEditing" 
+            type="button" 
+            class="btn btn-secondary" 
+            (click)="cancelEdit()"
+            [disabled]="isLoading"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Lista de clientes -->
+    <div class="list-section">
+      <h3>
+        {{ 
+          searchMode === 'all' ? 'Todos los Clientes' :
+          searchMode === 'nombre' ? 'Resultados de Búsqueda' :
+          'Mis Clientes'
+        }} ({{ filteredClientes.length }})
+      </h3>
+  
+      <div *ngIf="isLoading" class="loading">
+        Cargando clientes...
+      </div>
+  
+      <div *ngIf="!isLoading && filteredClientes.length === 0" class="no-data">
+        No se encontraron clientes
+      </div>
+  
+      <div *ngIf="!isLoading && filteredClientes.length > 0" class="clientes-grid">
+        <div *ngFor="let cliente of filteredClientes" class="cliente-card">
+          <div class="cliente-info">
+            <h4>{{ cliente.nombre }}</h4>
+            <p *ngIf="cliente.telefono"><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+            <p *ngIf="cliente.contacto"><strong>Contacto:</strong> {{ cliente.contacto }}</p>
+            <p><strong>ID Usuario:</strong> {{ cliente.id_user }}</p>
+          </div>
+          <div class="cliente-actions">
+            <button 
+              class="btn btn-warning btn-sm" 
+              (click)="onEdit(cliente)"
+              [disabled]="isLoading"
+            >
+              Editar
+            </button>
+            <button 
+              class="btn btn-danger btn-sm" 
+              (click)="onDelete(cliente.nombre)"
+              [disabled]="isLoading"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  

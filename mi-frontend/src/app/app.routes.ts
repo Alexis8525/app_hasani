@@ -4,6 +4,7 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { UsuariosComponent } from './pages/usuarios/usuarios.component';
 import { ProductosComponent } from './pages/productos/productos.component';
 import { authGuard } from './guards/auth.guard';
+import { ClientesComponent } from './pages/clientes/clientes.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -21,6 +22,11 @@ export const routes: Routes = [
   { 
     path: 'productos', 
     component: ProductosComponent, 
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'clientes', 
+    component: ClientesComponent, 
     canActivate: [authGuard] 
   },
   { path: '**', redirectTo: '/dashboard' }
