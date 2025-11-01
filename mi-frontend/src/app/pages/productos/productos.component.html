@@ -1,1 +1,260 @@
-<p>productos works!</p>
+<!-- productos.component.html -->
+<div class="productos-container">
+    <h2>📦 Gestión de Productos</h2>
+  
+    <!-- Mensajes de estado -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      ❌ {{ errorMessage }}
+    </div>
+  
+    <div *ngIf="successMessage" class="alert alert-success">
+      ✅ {{ successMessage }}
+    </div>
+  
+    <!-- Alertas de Stock -->
+    <div *ngIf="showStockAlerts" class="stock-alerts-section">
+      <div class="alerts-header">
+        <h3>🚨 Alertas de Stock</h3>
+        <button class="btn btn-secondary btn-sm" (click)="closeStockAlerts()">Cerrar</button>
+      </div>
+      <div *ngIf="stockAlertas.length === 0" class="no-alerts">
+        ✅ No hay alertas de stock en este momento
+      </div>
+      <div *ngIf="stockAlertas.length > 0" class="alerts-grid">
+        <div *ngFor="let alerta of stockAlertas" class="alerta-card" [class]="getAlertLevelClass(alerta)">
+          <h4>📦 {{ alerta.nombre }}</h4>
+          <p><strong>Stock Actual:</strong> {{ alerta.stock_actual }}</p>
+          <p><strong>Stock Mínimo:</strong> {{ alerta.stock_minimo }}</p>
+          <p><strong>Diferencia:</strong> {{ alerta.diferencia }}</p>
+          <p><strong>Nivel:</strong> {{ alerta.nivel_alerta }}</p>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Formulario de búsqueda y acciones -->
+    <div class="actions-section">
+      <h3>🔍 Buscar Productos</h3>
+      <form [formGroup]="searchForm" (ngSubmit)="searchByNombre()" class="search-form">
+        <div class="form-group">
+          <label for="searchTerm">Buscar por nombre:</label>
+          <div class="search-controls">
+            <input
+              id="searchTerm"
+              type="text"
+              formControlName="searchTerm"
+              placeholder="Ingrese nombre del producto..."
+              class="form-control"
+            />
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+              {{ isLoading ? '🔍 Buscando...' : '🔍 Buscar' }}
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
+              📋 Ver Todos
+            </button>
+            <button type="button" class="btn btn-warning" (click)="loadLowStock()" [disabled]="isLoading">
+              📉 Stock Bajo
+            </button>
+            <button type="button" class="btn btn-danger" (click)="checkStockAlerts()" [disabled]="isLoading">
+              🚨 Ver Alertas
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Formulario de creación/edición -->
+    <div class="form-section">
+      <h3>{{ isEditing ? '✏️ Editar Producto' : '➕ Nuevo Producto' }}</h3>
+      <form [formGroup]="productoForm" (ngSubmit)="isEditing ? onUpdate() : onCreate()" class="product-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="codigo">📋 Código *</label>
+            <input
+              id="codigo"
+              type="text"
+              formControlName="codigo"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('codigo')"
+              placeholder="Código único del producto"
+            />
+            <div *ngIf="isFieldInvalid('codigo')" class="error-message">
+              {{ getFieldError('codigo') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="nombre">🏷️ Nombre *</label>
+            <input
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('nombre')"
+              [readonly]="!canEditNombre()"
+              placeholder="Nombre del producto"
+            />
+            <div *ngIf="isFieldInvalid('nombre')" class="error-message">
+              {{ getFieldError('nombre') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="unidad">📏 Unidad *</label>
+            <input
+              id="unidad"
+              type="text"
+              formControlName="unidad"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('unidad')"
+              placeholder="kg, litros, unidades, etc."
+            />
+            <div *ngIf="isFieldInvalid('unidad')" class="error-message">
+              {{ getFieldError('unidad') }}
+            </div>
+          </div>
+        </div>
+  
+        <div class="form-row">
+          <div class="form-group">
+            <label for="categoria">📂 Categoría</label>
+            <input
+              id="categoria"
+              type="text"
+              formControlName="categoria"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('categoria')"
+              placeholder="Categoría del producto"
+            />
+            <div *ngIf="isFieldInvalid('categoria')" class="error-message">
+              {{ getFieldError('categoria') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="stock_minimo">📊 Stock Mínimo *</label>
+            <input
+              id="stock_minimo"
+              type="number"
+              formControlName="stock_minimo"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('stock_minimo')"
+              min="0"
+              step="1"
+            />
+            <div *ngIf="isFieldInvalid('stock_minimo')" class="error-message">
+              {{ getFieldError('stock_minimo') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="stock_actual">📦 Stock Actual *</label>
+            <input
+              id="stock_actual"
+              type="number"
+              formControlName="stock_actual"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('stock_actual')"
+              min="0"
+              step="1"
+            />
+            <div *ngIf="isFieldInvalid('stock_actual')" class="error-message">
+              {{ getFieldError('stock_actual') }}
+            </div>
+          </div>
+        </div>
+  
+        <div class="form-group full-width">
+          <label for="descripcion">📝 Descripción</label>
+          <textarea
+            id="descripcion"
+            formControlName="descripcion"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('descripcion')"
+            placeholder="Descripción detallada del producto"
+            rows="3"
+          ></textarea>
+          <div *ngIf="isFieldInvalid('descripcion')" class="error-message">
+            {{ getFieldError('descripcion') }}
+          </div>
+        </div>
+  
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            [disabled]="isLoading || productoForm.invalid"
+          >
+            {{ isLoading ? '⏳ Procesando...' : (isEditing ? '💾 Actualizar' : '➕ Crear') }}
+          </button>
+          
+          <button 
+            *ngIf="isEditing" 
+            type="button" 
+            class="btn btn-secondary" 
+            (click)="cancelEdit()"
+            [disabled]="isLoading"
+          >
+            ❌ Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Lista de productos -->
+    <div class="list-section">
+      <h3>
+        {{ 
+          searchMode === 'all' ? '📦 Todos los Productos' :
+          searchMode === 'search' ? '🔍 Resultados de Búsqueda' + (searchOriginalTerm ? ` para "${searchOriginalTerm}"` : '') :
+          '📉 Productos con Stock Bajo'
+        }} ({{ filteredProductos.length }})
+      </h3>
+  
+      <div *ngIf="isLoading" class="loading">
+        ⏳ Cargando productos...
+      </div>
+  
+      <div *ngIf="!isLoading && filteredProductos.length === 0" class="no-data">
+        📭 No se encontraron productos
+      </div>
+  
+      <div *ngIf="!isLoading && filteredProductos.length > 0" class="productos-grid">
+        <div *ngFor="let producto of filteredProductos" class="producto-card" [class]="getStockLevelClass(producto)">
+          <div class="producto-info">
+            <h4>🏷️ {{ producto.nombre }}</h4>
+            <p><strong>📋 Código:</strong> {{ producto.codigo }}</p>
+            <p><strong>📂 Categoría:</strong> {{ producto.categoria || 'Sin categoría' }}</p>
+            <p><strong>📏 Unidad:</strong> {{ producto.unidad }}</p>
+            <p><strong>📊 Stock Mínimo:</strong> {{ producto.stock_minimo }}</p>
+            <p><strong>📦 Stock Actual:</strong> {{ producto.stock_actual }}</p>
+            <p><strong>🏭 Proveedor:</strong> {{ producto.nombre_proveedor || 'No asignado' }}</p>
+            <p *ngIf="producto.descripcion"><strong>📝 Descripción:</strong> {{ producto.descripcion }}</p>
+            <p><strong>🔄 Estado:</strong> 
+              <span class="stock-badge" [class]="getStockLevelClass(producto)">
+                {{ getStockLevelText(producto) }}
+              </span>
+            </p>
+          </div>
+          <div class="producto-actions">
+            <button 
+              class="btn btn-warning btn-sm" 
+              (click)="onEdit(producto)"
+              [disabled]="isLoading"
+              title="Editar producto"
+            >
+              ✏️ Editar
+            </button>
+            <button 
+              class="btn btn-danger btn-sm" 
+              (click)="onDelete(producto.nombre)"
+              [disabled]="isLoading"
+              title="Eliminar producto"
+            >
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  

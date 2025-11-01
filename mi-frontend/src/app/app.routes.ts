@@ -5,6 +5,7 @@ import { UsuariosComponent } from './pages/usuarios/usuarios.component';
 import { ProductosComponent } from './pages/productos/productos.component';
 import { authGuard } from './guards/auth.guard';
 import { ClientesComponent } from './pages/clientes/clientes.component';
+import { ProveedoresComponent } from './pages/proveedores/proveedores.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -27,6 +28,11 @@ export const routes: Routes = [
   { 
     path: 'clientes', 
     component: ClientesComponent, 
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'proveedores', 
+    component: ProveedoresComponent, 
     canActivate: [authGuard] 
   },
   { path: '**', redirectTo: '/dashboard' }
