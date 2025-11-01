@@ -1,4 +1,20 @@
+
+
 /* usuarios.component.css */
+/* Ejemplo en usuarios.component.css */
+.usuarios-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 2rem;
+  }
+  
+  /* Ajustar para el layout */
+  :host {
+    display: block;
+    min-height: calc(100vh - 60px);
+  }
+  
 .usuarios-container {
     max-width: 1400px;
     margin: 0 auto;

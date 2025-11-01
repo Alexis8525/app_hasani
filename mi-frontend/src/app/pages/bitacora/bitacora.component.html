@@ -1,23 +1,23 @@
 <!-- bitacora.component.html -->
 <div class="bitacora-container">
-    <h2>📋 Bitácora de Movimientos</h2>
+    <h2>Bitácora de Movimientos</h2>
   
     <!-- Mensajes de estado -->
     <div *ngIf="errorMessage" class="alert alert-error">
-      ❌ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
   
     <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
+      {{ successMessage }}
     </div>
   
     <!-- Formulario de creación de registros -->
     <div class="form-section">
-      <h3>➕ Nuevo Registro en Bitácora</h3>
+      <h3>Nuevo Registro en Bitácora</h3>
       <form [formGroup]="bitacoraForm" (ngSubmit)="onCreate()" class="bitacora-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="id_movimiento">🔄 ID Movimiento *</label>
+            <label for="id_movimiento">ID Movimiento *</label>
             <input
               id="id_movimiento"
               type="number"
@@ -33,7 +33,7 @@
           </div>
   
           <div class="form-group">
-            <label for="id_proveedor">🏭 ID Proveedor *</label>
+            <label for="id_proveedor">ID Proveedor *</label>
             <input
               id="id_proveedor"
               type="number"
@@ -49,7 +49,7 @@
           </div>
   
           <div class="form-group">
-            <label for="cantidad">📦 Cantidad *</label>
+            <label for="cantidad">Cantidad *</label>
             <input
               id="cantidad"
               type="number"
@@ -66,7 +66,7 @@
           </div>
   
           <div class="form-group">
-            <label for="id_producto">🏷️ ID Producto *</label>
+            <label for="id_producto">ID Producto *</label>
             <input
               id="id_producto"
               type="number"
@@ -88,7 +88,7 @@
             class="btn btn-primary" 
             [disabled]="isLoading || bitacoraForm.invalid"
           >
-            {{ isLoading ? '⏳ Procesando...' : '💾 Crear Registro' }}
+            {{ isLoading ? 'Procesando...' : 'Crear Registro' }}
           </button>
         </div>
       </form>
@@ -96,7 +96,7 @@
   
     <!-- Sección de búsqueda -->
     <div class="search-section">
-      <h3>🔍 Buscar en Bitácora</h3>
+      <h3>Buscar en Bitácora</h3>
       <form [formGroup]="searchForm" (ngSubmit)="onSearch()" class="search-form">
         <div class="search-controls">
           <div class="form-group">
@@ -129,10 +129,10 @@
   
           <div class="form-group">
             <button type="submit" class="btn btn-primary" [disabled]="isLoading || searchForm.invalid">
-              🔍 Buscar
+              Buscar
             </button>
             <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
-              📋 Ver Todos
+              Ver Todos
             </button>
           </div>
         </div>
@@ -142,15 +142,15 @@
     <!-- Lista de registros de bitácora -->
     <div class="list-section">
       <h3>
-        📊 Bitácora {{ getSearchModeText() }} ({{ filteredBitacora.length }} registros)
+        Bitácora {{ getSearchModeText() }} ({{ filteredBitacora.length }} registros)
       </h3>
   
       <div *ngIf="isLoading" class="loading">
-        ⏳ Cargando bitácora...
+        Cargando bitácora...
       </div>
   
       <div *ngIf="!isLoading && filteredBitacora.length === 0" class="no-data">
-        📭 No se encontraron registros en la bitácora
+        No se encontraron registros en la bitácora
       </div>
   
       <div *ngIf="!isLoading && filteredBitacora.length > 0" class="bitacora-grid">
@@ -164,22 +164,22 @@
           <div class="bitacora-info">
             <div class="info-row">
               <div class="info-item">
-                <strong>🔄 Movimiento:</strong>
+                <strong>Movimiento:</strong>
                 <span>ID {{ registro.id_movimiento }}</span>
               </div>
               <div class="info-item">
-                <strong>🏭 Proveedor:</strong>
+                <strong>Proveedor:</strong>
                 <span>{{ registro.proveedor_nombre }} (ID: {{ registro.id_proveedor }})</span>
               </div>
             </div>
             
             <div class="info-row">
               <div class="info-item">
-                <strong>📦 Producto:</strong>
+                <strong>Producto:</strong>
                 <span>{{ registro.producto_nombre }} (ID: {{ registro.id_producto }})</span>
               </div>
               <div class="info-item">
-                <strong>🔢 Cantidad:</strong>
+                <strong>Cantidad:</strong>
                 <span class="cantidad">{{ registro.cantidad }}</span>
               </div>
             </div>
@@ -188,4 +188,3 @@
       </div>
     </div>
   </div>
-  

@@ -287,7 +287,7 @@ export class MovimientosComponent implements OnInit {
 
   // Obtener icono para el tipo de movimiento
   getTipoIcon(tipo: string): string {
-    return tipo === 'Entrada' ? '📥' : '📤';
+    return tipo === 'Entrada' ? '' : '';
   }
 
   // Obtener nivel de alerta para las alertas de stock

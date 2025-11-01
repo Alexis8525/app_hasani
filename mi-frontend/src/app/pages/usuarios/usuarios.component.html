@@ -1,21 +1,21 @@
 <!-- usuarios.component.html -->
 <div class="usuarios-container">
-    <h2>👥 Gestión de Usuarios</h2>
+    <h2>Gestión de Usuarios</h2>
   
     <!-- Mensajes de estado -->
     <div *ngIf="errorMessage" class="alert alert-error">
-      ❌ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
   
     <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
+      {{ successMessage }}
     </div>
   
     <!-- Modal de QR Code -->
     <div *ngIf="showQrCode && pinResponse" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>🔐 PIN Offline Generado</h3>
+          <h3>PIN Offline Generado</h3>
           <button class="btn-close" (click)="closeQrCode()">×</button>
         </div>
         <div class="modal-body">
@@ -25,7 +25,7 @@
           </div>
           <div class="qr-code" *ngIf="pinResponse.qrCodeUrl">
             <img [src]="pinResponse.qrCodeUrl" alt="QR Code para acceso offline" class="qr-image">
-            <p class="qr-help">📱 Escanea este código QR para guardar tu acceso offline</p>
+            <p class="qr-help">Escanea este código QR para guardar tu acceso offline</p>
           </div>
         </div>
         <div class="modal-footer">
@@ -38,7 +38,7 @@
     <div *ngIf="showPinManagement && selectedUser" class="modal-overlay">
       <div class="modal-content large">
         <div class="modal-header">
-          <h3>🔑 Gestión de PINs Offline - {{ selectedUser.email }}</h3>
+          <h3>Gestión de PINs Offline - {{ selectedUser.email }}</h3>
           <button class="btn-close" (click)="closePinManagement()">×</button>
         </div>
         <div class="modal-body">
@@ -54,7 +54,7 @@
                 </select>
               </div>
               <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-                {{ isLoading ? '⏳ Procesando...' : '🚀 Ejecutar' }}
+                {{ isLoading ? 'Procesando...' : 'Ejecutar' }}
               </button>
             </form>
           </div>
@@ -72,12 +72,12 @@
                   <p><strong>Creado:</strong> {{ formatDate(pin.created_at) }}</p>
                   <p><strong>Expira:</strong> {{ formatDate(pin.expires_at) }}</p>
                   <p *ngIf="isPinExpiring(pin.expires_at)" class="expiry-warning">
-                    ⚠️ Expira pronto
+                    Expira pronto
                   </p>
                 </div>
                 <div class="pin-actions">
                   <button class="btn btn-danger btn-sm" (click)="onRevokePin(pin.offline_pin)" [disabled]="isLoading">
-                    🗑️ Revocar
+                    Revocar
                   </button>
                 </div>
               </div>
@@ -89,11 +89,11 @@
   
     <!-- Formulario de creación/edición -->
     <div class="form-section">
-      <h3>{{ isEditing ? '✏️ Editar Usuario' : '➕ Nuevo Usuario' }}</h3>
+      <h3>{{ isEditing ? 'Editar Usuario' : 'Nuevo Usuario' }}</h3>
       <form [formGroup]="usuarioForm" (ngSubmit)="isEditing ? onUpdate() : onCreate()" class="usuario-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="email">📧 Email *</label>
+            <label for="email">Email *</label>
             <input
               id="email"
               type="email"
@@ -109,7 +109,7 @@
           </div>
   
           <div class="form-group">
-            <label for="role">👤 Rol *</label>
+            <label for="role">Rol *</label>
             <select
               id="role"
               formControlName="role"
@@ -141,7 +141,7 @@
   
         <div class="form-row">
           <div class="form-group">
-            <label for="password">🔒 Contraseña {{ isEditing ? '(dejar vacío para no cambiar)' : '*' }}</label>
+            <label for="password">Contraseña {{ isEditing ? '(dejar vacío para no cambiar)' : '*' }}</label>
             <input
               id="password"
               type="password"
@@ -166,7 +166,7 @@
                 formControlName="two_factor_enabled"
                 class="checkbox-input"
               />
-              🔐 Autenticación de Dos Factores
+              Autenticación de Dos Factores
             </label>
             <small class="form-help">
               Habilita la verificación en dos pasos para este usuario
@@ -180,7 +180,7 @@
             class="btn btn-primary" 
             [disabled]="isLoading || (isEditing ? false : usuarioForm.invalid)"
           >
-            {{ isLoading ? '⏳ Procesando...' : (isEditing ? '💾 Actualizar' : '➕ Crear') }}
+            {{ isLoading ? 'Procesando...' : (isEditing ? 'Actualizar' : 'Crear') }}
           </button>
           
           <button 
@@ -190,7 +190,7 @@
             (click)="cancelEdit()"
             [disabled]="isLoading"
           >
-            ❌ Cancelar
+            Cancelar
           </button>
         </div>
       </form>
@@ -198,26 +198,26 @@
   
     <!-- Lista de usuarios -->
     <div class="list-section">
-      <h3>📋 Lista de Usuarios ({{ usuarios.length }})</h3>
+      <h3>Lista de Usuarios ({{ usuarios.length }})</h3>
   
       <div *ngIf="isLoading" class="loading">
-        ⏳ Cargando usuarios...
+        Cargando usuarios...
       </div>
   
       <div *ngIf="!isLoading && usuarios.length === 0" class="no-data">
-        📭 No se encontraron usuarios
+        No se encontraron usuarios
       </div>
   
       <div *ngIf="!isLoading && usuarios.length > 0" class="usuarios-grid">
         <div *ngFor="let usuario of usuarios" class="usuario-card">
           <div class="usuario-info">
-            <h4>📧 {{ usuario.email }}</h4>
-            <p><strong>👤 Rol:</strong> {{ getRoleText(usuario.role) }}</p>
-            <p><strong>📞 Teléfono:</strong> {{ usuario.phone }}</p>
-            <p><strong>🆔 ID:</strong> {{ usuario.id }}</p>
-            <p><strong>📅 Registrado:</strong> {{ formatDate(usuario.created_at) }}</p>
-            <p><strong>🔐 2FA:</strong> {{ get2FAStatus(usuario.two_factor_enabled) }}</p>
-            <p *ngIf="usuario.offline_pin_secret"><strong>🔑 PIN Secret:</strong> {{ usuario.offline_pin_secret ? '✅ Configurado' : '❌ No configurado' }}</p>
+            <h4>{{ usuario.email }}</h4>
+            <p><strong>Rol:</strong> {{ getRoleText(usuario.role) }}</p>
+            <p><strong>Teléfono:</strong> {{ usuario.phone }}</p>
+            <p><strong>ID:</strong> {{ usuario.id }}</p>
+            <p><strong>Registrado:</strong> {{ formatDate(usuario.created_at) }}</p>
+            <p><strong>2FA:</strong> {{ get2FAStatus(usuario.two_factor_enabled) }}</p>
+            <p *ngIf="usuario.offline_pin_secret"><strong>PIN Secret:</strong> {{ usuario.offline_pin_secret ? 'Configurado' : 'No configurado' }}</p>
           </div>
           <div class="usuario-actions">
             <button 
@@ -226,7 +226,7 @@
               [disabled]="isLoading"
               title="Editar usuario"
             >
-              ✏️ Editar
+              Editar
             </button>
             <button 
               class="btn btn-info btn-sm" 
@@ -234,7 +234,7 @@
               [disabled]="isLoading"
               title="Gestionar PINs offline"
             >
-              🔑 PINs
+              PINs
             </button>
             <button 
               class="btn btn-danger btn-sm" 
@@ -242,7 +242,7 @@
               [disabled]="isLoading"
               title="Eliminar usuario"
             >
-              🗑️ Eliminar
+              Eliminar
             </button>
           </div>
         </div>

@@ -1,14 +1,14 @@
 <!-- proveedores.component.html -->
 <div class="proveedores-container">
-    <h2>🏭 Gestión de Proveedores</h2>
+    <h2>Gestión de Proveedores</h2>
   
     <!-- Mensajes de estado -->
     <div *ngIf="errorMessage" class="alert alert-error">
-      ❌ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
   
     <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
+      {{ successMessage }}
     </div>
   
     <!-- Formulario de búsqueda -->
@@ -26,10 +26,10 @@
               class="form-control"
             />
             <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-              {{ isLoading ? '🔍 Buscando...' : '🔍 Buscar' }}
+              {{ isLoading ? 'Buscando...' : 'Buscar' }}
             </button>
             <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
-              📋 Ver Todos
+              Ver Todos
             </button>
           </div>
         </div>
@@ -38,7 +38,7 @@
   
     <!-- Formulario de creación/edición -->
     <div class="form-section">
-      <h3>{{ isEditing ? '✏️ Editar Proveedor' : '➕ Nuevo Proveedor' }}</h3>
+      <h3>{{ isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h3>
       <form [formGroup]="proveedorForm" (ngSubmit)="isEditing ? onUpdate() : onCreate()" class="provider-form">
         <div class="form-row">
           <div class="form-group">
@@ -58,7 +58,7 @@
           </div>
   
           <div class="form-group">
-            <label for="telefono">📞 Teléfono</label>
+            <label for="telefono">Teléfono</label>
             <input
               id="telefono"
               type="text"
@@ -73,7 +73,7 @@
           </div>
   
           <div class="form-group">
-            <label for="contacto">👤 Contacto</label>
+            <label for="contacto">Contacto</label>
             <input
               id="contacto"
               type="text"
@@ -94,7 +94,7 @@
             class="btn btn-primary" 
             [disabled]="isLoading || proveedorForm.invalid"
           >
-            {{ isLoading ? '⏳ Procesando...' : (isEditing ? '💾 Actualizar' : '➕ Crear') }}
+            {{ isLoading ? 'Procesando...' : (isEditing ? 'Actualizar' : 'Crear') }}
           </button>
           
           <button 
@@ -104,7 +104,7 @@
             (click)="cancelEdit()"
             [disabled]="isLoading"
           >
-            ❌ Cancelar
+            Cancelar
           </button>
         </div>
       </form>
@@ -114,26 +114,26 @@
     <div class="list-section">
       <h3>
         {{ 
-          searchMode === 'all' ? '📋 Todos los Proveedores' :
-          '🔍 Resultados de Búsqueda'
+          searchMode === 'all' ? 'Todos los Proveedores' :
+          'Resultados de Búsqueda'
         }} ({{ filteredProveedores.length }})
       </h3>
   
       <div *ngIf="isLoading" class="loading">
-        ⏳ Cargando proveedores...
+        Cargando proveedores...
       </div>
   
       <div *ngIf="!isLoading && filteredProveedores.length === 0" class="no-data">
-        📭 No se encontraron proveedores
+        No se encontraron proveedores
       </div>
   
       <div *ngIf="!isLoading && filteredProveedores.length > 0" class="proveedores-grid">
         <div *ngFor="let proveedor of filteredProveedores" class="proveedor-card">
           <div class="proveedor-info">
-            <h4>🏭 {{ proveedor.nombre }}</h4>
-            <p *ngIf="proveedor.telefono"><strong>📞 Teléfono:</strong> {{ proveedor.telefono }}</p>
-            <p *ngIf="proveedor.contacto"><strong>👤 Contacto:</strong> {{ proveedor.contacto }}</p>
-            <p><strong>🆔 ID:</strong> {{ proveedor.id_proveedor }}</p>
+            <h4>{{ proveedor.nombre }}</h4>
+            <p *ngIf="proveedor.telefono"><strong>Teléfono:</strong> {{ proveedor.telefono }}</p>
+            <p *ngIf="proveedor.contacto"><strong>Contacto:</strong> {{ proveedor.contacto }}</p>
+            <p><strong>ID:</strong> {{ proveedor.id_proveedor }}</p>
           </div>
           <div class="proveedor-actions">
             <button 
@@ -142,7 +142,7 @@
               [disabled]="isLoading"
               title="Editar proveedor"
             >
-              ✏️ Editar
+              Editar
             </button>
             <button 
               class="btn btn-danger btn-sm" 
@@ -150,7 +150,7 @@
               [disabled]="isLoading"
               title="Eliminar proveedor"
             >
-              🗑️ Eliminar
+              Eliminar
             </button>
           </div>
         </div>

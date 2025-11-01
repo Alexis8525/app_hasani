@@ -1,28 +1,28 @@
 <!-- productos.component.html -->
 <div class="productos-container">
-    <h2>📦 Gestión de Productos</h2>
+    <h2>Gestión de Productos</h2>
   
     <!-- Mensajes de estado -->
     <div *ngIf="errorMessage" class="alert alert-error">
-      ❌ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
   
     <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
+      {{ successMessage }}
     </div>
   
     <!-- Alertas de Stock -->
     <div *ngIf="showStockAlerts" class="stock-alerts-section">
       <div class="alerts-header">
-        <h3>🚨 Alertas de Stock</h3>
+        <h3>Alertas de Stock</h3>
         <button class="btn btn-secondary btn-sm" (click)="closeStockAlerts()">Cerrar</button>
       </div>
       <div *ngIf="stockAlertas.length === 0" class="no-alerts">
-        ✅ No hay alertas de stock en este momento
+        No hay alertas de stock en este momento
       </div>
       <div *ngIf="stockAlertas.length > 0" class="alerts-grid">
         <div *ngFor="let alerta of stockAlertas" class="alerta-card" [class]="getAlertLevelClass(alerta)">
-          <h4>📦 {{ alerta.nombre }}</h4>
+          <h4>{{ alerta.nombre }}</h4>
           <p><strong>Stock Actual:</strong> {{ alerta.stock_actual }}</p>
           <p><strong>Stock Mínimo:</strong> {{ alerta.stock_minimo }}</p>
           <p><strong>Diferencia:</strong> {{ alerta.diferencia }}</p>
@@ -33,7 +33,7 @@
   
     <!-- Formulario de búsqueda y acciones -->
     <div class="actions-section">
-      <h3>🔍 Buscar Productos</h3>
+      <h3>Buscar Productos</h3>
       <form [formGroup]="searchForm" (ngSubmit)="searchByNombre()" class="search-form">
         <div class="form-group">
           <label for="searchTerm">Buscar por nombre:</label>
@@ -46,16 +46,16 @@
               class="form-control"
             />
             <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-              {{ isLoading ? '🔍 Buscando...' : '🔍 Buscar' }}
+              {{ isLoading ? 'Buscando...' : 'Buscar' }}
             </button>
             <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
-              📋 Ver Todos
+              Ver Todos
             </button>
             <button type="button" class="btn btn-warning" (click)="loadLowStock()" [disabled]="isLoading">
-              📉 Stock Bajo
+              Stock Bajo
             </button>
             <button type="button" class="btn btn-danger" (click)="checkStockAlerts()" [disabled]="isLoading">
-              🚨 Ver Alertas
+              Ver Alertas
             </button>
           </div>
         </div>
@@ -64,11 +64,11 @@
   
     <!-- Formulario de creación/edición -->
     <div class="form-section">
-      <h3>{{ isEditing ? '✏️ Editar Producto' : '➕ Nuevo Producto' }}</h3>
+      <h3>{{ isEditing ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
       <form [formGroup]="productoForm" (ngSubmit)="isEditing ? onUpdate() : onCreate()" class="product-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="codigo">📋 Código *</label>
+            <label for="codigo">Código *</label>
             <input
               id="codigo"
               type="text"
@@ -83,7 +83,7 @@
           </div>
   
           <div class="form-group">
-            <label for="nombre">🏷️ Nombre *</label>
+            <label for="nombre">Nombre *</label>
             <input
               id="nombre"
               type="text"
@@ -99,7 +99,7 @@
           </div>
   
           <div class="form-group">
-            <label for="unidad">📏 Unidad *</label>
+            <label for="unidad">Unidad *</label>
             <input
               id="unidad"
               type="text"
@@ -116,7 +116,7 @@
   
         <div class="form-row">
           <div class="form-group">
-            <label for="categoria">📂 Categoría</label>
+            <label for="categoria">Categoría</label>
             <input
               id="categoria"
               type="text"
@@ -131,7 +131,7 @@
           </div>
   
           <div class="form-group">
-            <label for="stock_minimo">📊 Stock Mínimo *</label>
+            <label for="stock_minimo">Stock Mínimo *</label>
             <input
               id="stock_minimo"
               type="number"
@@ -147,7 +147,7 @@
           </div>
   
           <div class="form-group">
-            <label for="stock_actual">📦 Stock Actual *</label>
+            <label for="stock_actual">Stock Actual *</label>
             <input
               id="stock_actual"
               type="number"
@@ -164,7 +164,7 @@
         </div>
   
         <div class="form-group full-width">
-          <label for="descripcion">📝 Descripción</label>
+          <label for="descripcion">Descripción</label>
           <textarea
             id="descripcion"
             formControlName="descripcion"
@@ -184,7 +184,7 @@
             class="btn btn-primary" 
             [disabled]="isLoading || productoForm.invalid"
           >
-            {{ isLoading ? '⏳ Procesando...' : (isEditing ? '💾 Actualizar' : '➕ Crear') }}
+            {{ isLoading ? 'Procesando...' : (isEditing ? 'Actualizar' : 'Crear') }}
           </button>
           
           <button 
@@ -194,7 +194,7 @@
             (click)="cancelEdit()"
             [disabled]="isLoading"
           >
-            ❌ Cancelar
+            Cancelar
           </button>
         </div>
       </form>
@@ -204,32 +204,32 @@
     <div class="list-section">
       <h3>
         {{ 
-          searchMode === 'all' ? '📦 Todos los Productos' :
-          searchMode === 'search' ? '🔍 Resultados de Búsqueda' + (searchOriginalTerm ? ` para "${searchOriginalTerm}"` : '') :
-          '📉 Productos con Stock Bajo'
+          searchMode === 'all' ? 'Todos los Productos' :
+          searchMode === 'search' ? 'Resultados de Búsqueda' + (searchOriginalTerm ? ` para "${searchOriginalTerm}"` : '') :
+          'Productos con Stock Bajo'
         }} ({{ filteredProductos.length }})
       </h3>
   
       <div *ngIf="isLoading" class="loading">
-        ⏳ Cargando productos...
+        Cargando productos...
       </div>
   
       <div *ngIf="!isLoading && filteredProductos.length === 0" class="no-data">
-        📭 No se encontraron productos
+        No se encontraron productos
       </div>
   
       <div *ngIf="!isLoading && filteredProductos.length > 0" class="productos-grid">
         <div *ngFor="let producto of filteredProductos" class="producto-card" [class]="getStockLevelClass(producto)">
           <div class="producto-info">
-            <h4>🏷️ {{ producto.nombre }}</h4>
-            <p><strong>📋 Código:</strong> {{ producto.codigo }}</p>
-            <p><strong>📂 Categoría:</strong> {{ producto.categoria || 'Sin categoría' }}</p>
-            <p><strong>📏 Unidad:</strong> {{ producto.unidad }}</p>
-            <p><strong>📊 Stock Mínimo:</strong> {{ producto.stock_minimo }}</p>
-            <p><strong>📦 Stock Actual:</strong> {{ producto.stock_actual }}</p>
-            <p><strong>🏭 Proveedor:</strong> {{ producto.nombre_proveedor || 'No asignado' }}</p>
-            <p *ngIf="producto.descripcion"><strong>📝 Descripción:</strong> {{ producto.descripcion }}</p>
-            <p><strong>🔄 Estado:</strong> 
+            <h4>{{ producto.nombre }}</h4>
+            <p><strong>Código:</strong> {{ producto.codigo }}</p>
+            <p><strong>Categoría:</strong> {{ producto.categoria || 'Sin categoría' }}</p>
+            <p><strong>Unidad:</strong> {{ producto.unidad }}</p>
+            <p><strong>Stock Mínimo:</strong> {{ producto.stock_minimo }}</p>
+            <p><strong>Stock Actual:</strong> {{ producto.stock_actual }}</p>
+            <p><strong>Proveedor:</strong> {{ producto.nombre_proveedor || 'No asignado' }}</p>
+            <p *ngIf="producto.descripcion"><strong>Descripción:</strong> {{ producto.descripcion }}</p>
+            <p><strong>Estado:</strong> 
               <span class="stock-badge" [class]="getStockLevelClass(producto)">
                 {{ getStockLevelText(producto) }}
               </span>
@@ -242,7 +242,7 @@
               [disabled]="isLoading"
               title="Editar producto"
             >
-              ✏️ Editar
+              Editar
             </button>
             <button 
               class="btn btn-danger btn-sm" 
@@ -250,7 +250,7 @@
               [disabled]="isLoading"
               title="Eliminar producto"
             >
-              🗑️ Eliminar
+              Eliminar
             </button>
           </div>
         </div>

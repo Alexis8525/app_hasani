@@ -407,14 +407,14 @@ export class UsuariosComponent implements OnInit {
   // Obtener texto del rol
   getRoleText(role: string): string {
     const roleTexts: { [key: string]: string } = {
-      'admin': '👑 Administrador',
-      'user': '👤 Usuario'
+      'admin': 'Administrador',
+      'user': 'Usuario'
     };
     return roleTexts[role] || role;
   }
 
   // Obtener estado del 2FA
   get2FAStatus(two_factor_enabled: boolean): string {
-    return two_factor_enabled ? '✅ Activado' : '❌ Desactivado';
+    return two_factor_enabled ? 'Activado' : 'Desactivado';
   }
 }

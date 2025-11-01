@@ -2,7 +2,9 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs'; // ✅ Importar tap
+import { Router } from '@angular/router'
+
 
 export interface LoginResponse {
   message: string;
@@ -46,6 +48,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
   private apiUrl = 'http://localhost:3000/api/auth';
+  private router = inject(Router);
 
   login(email: string, password: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
@@ -92,12 +95,6 @@ export class AuthService {
     }
   }
 
-  getToken(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  }
 
   loadUserFromStorage(): any {
     if (isPlatformBrowser(this.platformId)) {
@@ -107,22 +104,36 @@ export class AuthService {
     return null;
   }
 
-  logout(): void {
+  logout(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/logout`, {}).pipe(
+      tap(() => {
+        this.clearAuthData();
+        this.router.navigate(['/login']);
+      })
+    );
+  }
+  clearAuthData(): void {
     if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem('user');
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      // Limpiar cualquier otro dato relacionado con la sesión
     }
   }
 
-  isLoggedIn(): boolean {
+  // Método para logout forzado (sin llamar al backend)
+  forceLogout(): void {
+    this.clearAuthData();
+    this.router.navigate(['/login']);
+  }
+
+  // Verificar si el usuario está autenticado
+  isAuthenticated(): boolean {
     if (isPlatformBrowser(this.platformId)) {
-      return !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token');
+      const user = localStorage.getItem('user_data');
+      return !!(token && user && !this.isTokenExpired());
     }
     return false;
-  }
-
-  isAuthenticated(): boolean {
-    return this.isLoggedIn() && !this.isTokenExpired();
   }
 
   // Verificar si el token está expirado
@@ -137,6 +148,24 @@ export class AuthService {
       return true;
     }
   }
+
+  // Obtener token
+  getToken(): string | null {
+    if (isPlatformBrowser(this.platformId)) {
+      return localStorage.getItem('auth_token');
+    }
+    return null;
+  }
+
+  isLoggedIn(): boolean {
+    if (isPlatformBrowser(this.platformId)) {
+      return !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
+    }
+    return false;
+  }
+
+
+  // Verificar si el token está expirado
 
   // Obtener datos del usuario actual
   getCurrentUser() {

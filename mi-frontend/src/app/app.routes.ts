@@ -8,44 +8,24 @@ import { ClientesComponent } from './pages/clientes/clientes.component';
 import { ProveedoresComponent } from './pages/proveedores/proveedores.component';
 import { MovimientosComponent } from './pages/movimientos/movimientos.component';
 import { BitacoraComponent } from './pages/bitacora/bitacora.component';
+import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { 
-    path: 'dashboard', 
-    component: DashboardComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'usuarios', 
-    component: UsuariosComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'productos', 
-    component: ProductosComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'clientes', 
-    component: ClientesComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'proveedores', 
-    component: ProveedoresComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'movimientos', 
-    component: MovimientosComponent, 
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'bitacora', 
-    component: BitacoraComponent, 
-    canActivate: [authGuard] 
+    path: '',
+    component: MainLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'usuarios', component: UsuariosComponent },
+      { path: 'productos', component: ProductosComponent },
+      { path: 'clientes', component: ClientesComponent },
+      { path: 'proveedores', component: ProveedoresComponent },
+      { path: 'movimientos', component: MovimientosComponent },
+      { path: 'bitacora', component: BitacoraComponent },
+    ]
   },
   { path: '**', redirectTo: '/usuarios' }
 ];

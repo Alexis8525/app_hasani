@@ -1,28 +1,28 @@
 <!-- movimientos.component.html -->
 <div class="movimientos-container">
-    <h2>📊 Gestión de Movimientos de Inventario</h2>
+    <h2>Gestión de Movimientos de Inventario</h2>
   
     <!-- Mensajes de estado -->
     <div *ngIf="errorMessage" class="alert alert-error">
-      ❌ {{ errorMessage }}
+      {{ errorMessage }}
     </div>
   
     <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
+      {{ successMessage }}
     </div>
   
     <!-- Alertas de Stock -->
     <div *ngIf="showStockAlerts" class="stock-alerts-section">
       <div class="alerts-header">
-        <h3>🚨 Alertas de Stock Bajo</h3>
+        <h3>Alertas de Stock Bajo</h3>
         <button class="btn btn-secondary btn-sm" (click)="closeStockAlerts()">Cerrar</button>
       </div>
       <div *ngIf="productosStockBajo.length === 0" class="no-alerts">
-        ✅ No hay alertas de stock en este momento
+        No hay alertas de stock en este momento
       </div>
       <div *ngIf="productosStockBajo.length > 0" class="alerts-grid">
         <div *ngFor="let alerta of productosStockBajo" class="alerta-card" [class]="getAlertLevelClass(alerta)">
-          <h4>📦 {{ alerta.nombre }}</h4>
+          <h4>{{ alerta.nombre }}</h4>
           <p><strong>Stock Actual:</strong> {{ alerta.stock_actual }}</p>
           <p><strong>Stock Mínimo:</strong> {{ alerta.stock_minimo }}</p>
           <p><strong>Diferencia:</strong> {{ alerta.diferencia }}</p>
@@ -33,19 +33,19 @@
   
     <!-- Formulario de creación de movimientos -->
     <div class="form-section">
-      <h3>➕ Registrar Nuevo Movimiento</h3>
+      <h3>Registrar Nuevo Movimiento</h3>
       <form [formGroup]="movimientoForm" (ngSubmit)="onCreate()" class="movimiento-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="tipo">🔄 Tipo de Movimiento *</label>
+            <label for="tipo">Tipo de Movimiento *</label>
             <select
               id="tipo"
               formControlName="tipo"
               class="form-control"
               [class.is-invalid]="isFieldInvalid(movimientoForm, 'tipo')"
             >
-              <option value="Entrada">📥 Entrada</option>
-              <option value="Salida">📤 Salida</option>
+              <option value="Entrada">Entrada</option>
+              <option value="Salida">Salida</option>
             </select>
             <div *ngIf="isFieldInvalid(movimientoForm, 'tipo')" class="error-message">
               {{ getFieldError(movimientoForm, 'tipo') }}
@@ -53,7 +53,7 @@
           </div>
   
           <div class="form-group">
-            <label for="nombreProducto">🏷️ Nombre del Producto *</label>
+            <label for="nombreProducto">Nombre del Producto *</label>
             <input
               id="nombreProducto"
               type="text"
@@ -68,7 +68,7 @@
           </div>
   
           <div class="form-group">
-            <label for="cantidad">📦 Cantidad *</label>
+            <label for="cantidad">Cantidad *</label>
             <input
               id="cantidad"
               type="number"
@@ -87,7 +87,7 @@
   
         <div class="form-row">
           <div class="form-group">
-            <label for="referencia">📝 Referencia</label>
+            <label for="referencia">Referencia</label>
             <input
               id="referencia"
               type="text"
@@ -102,7 +102,7 @@
           </div>
   
           <div class="form-group">
-            <label for="id_cliente">👤 Cliente (opcional)</label>
+            <label for="id_cliente">Cliente (opcional)</label>
             <input
               id="id_cliente"
               type="number"
@@ -124,7 +124,7 @@
             class="btn btn-primary" 
             [disabled]="isLoading || movimientoForm.invalid"
           >
-            {{ isLoading ? '⏳ Procesando...' : '💾 Registrar Movimiento' }}
+            {{ isLoading ? 'Procesando...' : 'Registrar Movimiento' }}
           </button>
         </div>
       </form>
@@ -132,7 +132,7 @@
   
     <!-- Sección de búsqueda y reportes -->
     <div class="search-section">
-      <h3>🔍 Buscar y Reportes</h3>
+      <h3>Buscar y Reportes</h3>
       
       <!-- Búsqueda por producto -->
       <div class="search-group">
@@ -146,7 +146,7 @@
               class="form-control"
             />
             <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-              🔍 Buscar
+              Buscar
             </button>
           </div>
         </form>
@@ -179,7 +179,7 @@
             </div>
             <div class="form-group">
               <button type="submit" class="btn btn-primary" [disabled]="isLoading || dateRangeForm.invalid">
-                📅 Generar Reporte
+                Generar Reporte
               </button>
             </div>
           </div>
@@ -189,13 +189,13 @@
       <!-- Acciones adicionales -->
       <div class="action-buttons">
         <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
-          📋 Ver Todos
+          Ver Todos
         </button>
         <button type="button" class="btn btn-warning" (click)="loadProductosStockBajo()" [disabled]="isLoading">
-          📉 Productos Stock Bajo
+          Productos Stock Bajo
         </button>
         <button type="button" class="btn btn-danger" (click)="checkStockAlerts()" [disabled]="isLoading">
-          🚨 Verificar Alertas
+          Verificar Alertas
         </button>
       </div>
     </div>
@@ -204,19 +204,19 @@
     <div class="list-section">
       <h3>
         {{ 
-          searchMode === 'all' ? '📊 Todos los Movimientos' :
-          searchMode === 'producto' ? '🔍 Movimientos del Producto' + (searchOriginalTerm ? ` "${searchOriginalTerm}"` : '') :
-          searchMode === 'date-range' ? '📅 Movimientos por Fecha' :
-          '🚨 Alertas de Stock'
+          searchMode === 'all' ? 'Todos los Movimientos' :
+          searchMode === 'producto' ? 'Movimientos del Producto' + (searchOriginalTerm ? ` "${searchOriginalTerm}"` : '') :
+          searchMode === 'date-range' ? 'Movimientos por Fecha' :
+          'Alertas de Stock'
         }} ({{ filteredMovimientos.length }})
       </h3>
   
       <div *ngIf="isLoading" class="loading">
-        ⏳ Cargando movimientos...
+        Cargando movimientos...
       </div>
   
       <div *ngIf="!isLoading && filteredMovimientos.length === 0" class="no-data">
-        📭 No se encontraron movimientos
+        No se encontraron movimientos
       </div>
   
       <div *ngIf="!isLoading && filteredMovimientos.length > 0" class="movimientos-grid">
@@ -228,15 +228,14 @@
           </div>
           
           <div class="movimiento-info">
-            <p><strong>📦 Producto:</strong> {{ movimiento.producto_nombre }}</p>
-            <p><strong>🔢 Cantidad:</strong> {{ movimiento.cantidad }}</p>
-            <p><strong>👤 Responsable:</strong> {{ movimiento.responsable_nombre }}</p>
-            <p *ngIf="movimiento.referencia"><strong>📝 Referencia:</strong> {{ movimiento.referencia }}</p>
-            <p *ngIf="movimiento.cliente_nombre"><strong>👥 Cliente:</strong> {{ movimiento.cliente_nombre }}</p>
-            <p><strong>🆔 ID Movimiento:</strong> {{ movimiento.id_movimiento }}</p>
+            <p><strong>Producto:</strong> {{ movimiento.producto_nombre }}</p>
+            <p><strong>Cantidad:</strong> {{ movimiento.cantidad }}</p>
+            <p><strong>Responsable:</strong> {{ movimiento.responsable_nombre }}</p>
+            <p *ngIf="movimiento.referencia"><strong>Referencia:</strong> {{ movimiento.referencia }}</p>
+            <p *ngIf="movimiento.cliente_nombre"><strong>Cliente:</strong> {{ movimiento.cliente_nombre }}</p>
+            <p><strong>ID Movimiento:</strong> {{ movimiento.id_movimiento }}</p>
           </div>
         </div>
       </div>
     </div>
   </div>
-  
