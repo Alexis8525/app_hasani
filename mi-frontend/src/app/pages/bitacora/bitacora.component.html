@@ -1,1 +1,191 @@
-<p>bitacora works!</p>
+<!-- bitacora.component.html -->
+<div class="bitacora-container">
+    <h2>📋 Bitácora de Movimientos</h2>
+  
+    <!-- Mensajes de estado -->
+    <div *ngIf="errorMessage" class="alert alert-error">
+      ❌ {{ errorMessage }}
+    </div>
+  
+    <div *ngIf="successMessage" class="alert alert-success">
+      ✅ {{ successMessage }}
+    </div>
+  
+    <!-- Formulario de creación de registros -->
+    <div class="form-section">
+      <h3>➕ Nuevo Registro en Bitácora</h3>
+      <form [formGroup]="bitacoraForm" (ngSubmit)="onCreate()" class="bitacora-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id_movimiento">🔄 ID Movimiento *</label>
+            <input
+              id="id_movimiento"
+              type="number"
+              formControlName="id_movimiento"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid(bitacoraForm, 'id_movimiento')"
+              min="1"
+              placeholder="ID del movimiento"
+            />
+            <div *ngIf="isFieldInvalid(bitacoraForm, 'id_movimiento')" class="error-message">
+              {{ getFieldError(bitacoraForm, 'id_movimiento') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="id_proveedor">🏭 ID Proveedor *</label>
+            <input
+              id="id_proveedor"
+              type="number"
+              formControlName="id_proveedor"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid(bitacoraForm, 'id_proveedor')"
+              min="1"
+              placeholder="ID del proveedor"
+            />
+            <div *ngIf="isFieldInvalid(bitacoraForm, 'id_proveedor')" class="error-message">
+              {{ getFieldError(bitacoraForm, 'id_proveedor') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="cantidad">📦 Cantidad *</label>
+            <input
+              id="cantidad"
+              type="number"
+              formControlName="cantidad"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid(bitacoraForm, 'cantidad')"
+              min="1"
+              max="1000000"
+              placeholder="Cantidad"
+            />
+            <div *ngIf="isFieldInvalid(bitacoraForm, 'cantidad')" class="error-message">
+              {{ getFieldError(bitacoraForm, 'cantidad') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <label for="id_producto">🏷️ ID Producto *</label>
+            <input
+              id="id_producto"
+              type="number"
+              formControlName="id_producto"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid(bitacoraForm, 'id_producto')"
+              min="1"
+              placeholder="ID del producto"
+            />
+            <div *ngIf="isFieldInvalid(bitacoraForm, 'id_producto')" class="error-message">
+              {{ getFieldError(bitacoraForm, 'id_producto') }}
+            </div>
+          </div>
+        </div>
+  
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            [disabled]="isLoading || bitacoraForm.invalid"
+          >
+            {{ isLoading ? '⏳ Procesando...' : '💾 Crear Registro' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Sección de búsqueda -->
+    <div class="search-section">
+      <h3>🔍 Buscar en Bitácora</h3>
+      <form [formGroup]="searchForm" (ngSubmit)="onSearch()" class="search-form">
+        <div class="search-controls">
+          <div class="form-group">
+            <label for="searchType">Buscar por:</label>
+            <select
+              id="searchType"
+              formControlName="searchType"
+              class="form-control"
+            >
+              <option value="movimiento">Movimiento</option>
+              <option value="proveedor">Proveedor</option>
+            </select>
+          </div>
+  
+          <div class="form-group">
+            <label for="searchId">ID:</label>
+            <input
+              id="searchId"
+              type="number"
+              formControlName="searchId"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid(searchForm, 'searchId')"
+              min="1"
+              placeholder="Ingrese el ID"
+            />
+            <div *ngIf="isFieldInvalid(searchForm, 'searchId')" class="error-message">
+              {{ getFieldError(searchForm, 'searchId') }}
+            </div>
+          </div>
+  
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading || searchForm.invalid">
+              🔍 Buscar
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
+              📋 Ver Todos
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  
+    <!-- Lista de registros de bitácora -->
+    <div class="list-section">
+      <h3>
+        📊 Bitácora {{ getSearchModeText() }} ({{ filteredBitacora.length }} registros)
+      </h3>
+  
+      <div *ngIf="isLoading" class="loading">
+        ⏳ Cargando bitácora...
+      </div>
+  
+      <div *ngIf="!isLoading && filteredBitacora.length === 0" class="no-data">
+        📭 No se encontraron registros en la bitácora
+      </div>
+  
+      <div *ngIf="!isLoading && filteredBitacora.length > 0" class="bitacora-grid">
+        <div *ngFor="let registro of filteredBitacora" class="bitacora-card" [class]="getTipoClass(registro.tipo || '')">
+          <div class="bitacora-header">
+            <span class="tipo-icon">{{ getTipoIcon(registro.tipo || '') }}</span>
+            <h4>{{ getTipoText(registro.tipo || '') }} - {{ registro.producto_nombre }}</h4>
+            <span *ngIf="registro.fecha" class="fecha">{{ formatDate(registro.fecha) }}</span>
+          </div>
+          
+          <div class="bitacora-info">
+            <div class="info-row">
+              <div class="info-item">
+                <strong>🔄 Movimiento:</strong>
+                <span>ID {{ registro.id_movimiento }}</span>
+              </div>
+              <div class="info-item">
+                <strong>🏭 Proveedor:</strong>
+                <span>{{ registro.proveedor_nombre }} (ID: {{ registro.id_proveedor }})</span>
+              </div>
+            </div>
+            
+            <div class="info-row">
+              <div class="info-item">
+                <strong>📦 Producto:</strong>
+                <span>{{ registro.producto_nombre }} (ID: {{ registro.id_producto }})</span>
+              </div>
+              <div class="info-item">
+                <strong>🔢 Cantidad:</strong>
+                <span class="cantidad">{{ registro.cantidad }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  

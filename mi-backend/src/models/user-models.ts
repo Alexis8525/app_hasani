@@ -228,7 +228,7 @@ export class UserModel {
 
   // ✅ AÑADE estas nuevas validaciones (sin duplicar)
   static validateRole(role: string): { valid: boolean; message?: string } {
-    const validRoles = ['admin', 'user', 'editor', 'lector'];
+    const validRoles = ['admin', 'user', 'editor', 'lector', ];
     if (!validRoles.includes(role))
       return { valid: false, message: `Rol inválido. Debe ser uno de: ${validRoles.join(', ')}` };
     return { valid: true };

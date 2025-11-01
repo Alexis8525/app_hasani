@@ -6,6 +6,8 @@ import { ProductosComponent } from './pages/productos/productos.component';
 import { authGuard } from './guards/auth.guard';
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { ProveedoresComponent } from './pages/proveedores/proveedores.component';
+import { MovimientosComponent } from './pages/movimientos/movimientos.component';
+import { BitacoraComponent } from './pages/bitacora/bitacora.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -35,5 +37,15 @@ export const routes: Routes = [
     component: ProveedoresComponent, 
     canActivate: [authGuard] 
   },
-  { path: '**', redirectTo: '/dashboard' }
+  { 
+    path: 'movimientos', 
+    component: MovimientosComponent, 
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'bitacora', 
+    component: BitacoraComponent, 
+    canActivate: [authGuard] 
+  },
+  { path: '**', redirectTo: '/usuarios' }
 ];
