@@ -1,9 +1,8 @@
-// login.component.ts
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService, LoginResponse } from '../../core/services/auth.service';
+import { AuthService, LoginResponse, ActiveSession } from '../../core/services/auth.service';
 import { TwoFactorComponent } from '../two-factor/two-factor.component';
 
 @Component({
@@ -28,6 +27,11 @@ export class LoginComponent {
   offlinePin = '';
   userEmail = '';
 
+  // Estados para manejo de sesiones activas
+  showSessionConflict = false;
+  activeSessions: ActiveSession[] = [];
+  forceLoginLoading = false;
+
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -49,11 +53,7 @@ export class LoginComponent {
           this.isLoading = false;
           
           if (response.code === 'ACTIVE_SESSION_EXISTS') {
-            this.errorMessage = `
-              Ya tienes una sesión activa. 
-              Por seguridad, solo puedes tener una sesión a la vez.
-              Cierra la sesión actual antes de iniciar una nueva.
-            `;
+            this.handleActiveSession(response);
             return;
           }
   
@@ -61,10 +61,6 @@ export class LoginComponent {
             this.requires2FA = true;
             this.tempToken = response.tempToken!;
             this.offlinePin = response.offlinePin!;
-            
-            // Mostrar mensaje informativo
-            console.log('2FA requerido. Token:', this.tempToken);
-            console.log('PIN offline:', this.offlinePin);
           } 
           else if (response.token && response.user) {
             this.handleSuccessfulLogin(response);
@@ -76,7 +72,6 @@ export class LoginComponent {
         error: (error: any) => {
           this.isLoading = false;
           
-          // Manejo específico de errores HTTP
           if (error.status === 0) {
             this.errorMessage = 'Error de conexión. Verifica tu internet.';
           } else if (error.status === 401) {
@@ -92,7 +87,60 @@ export class LoginComponent {
       });
     }
   }
-  
+
+  // Manejar sesión activa existente
+  private handleActiveSession(response: LoginResponse) {
+    this.showSessionConflict = true;
+    
+    // Cargar sesiones activas para mostrar información
+    this.authService.getActiveSessions().subscribe({
+      next: (sessionsResponse) => {
+        this.activeSessions = sessionsResponse.sessions;
+      },
+      error: (error) => {
+        console.error('Error cargando sesiones activas:', error);
+      }
+    });
+  }
+
+  // Forzar login cerrando sesiones anteriores
+  forceLogin() {
+    this.forceLoginLoading = true;
+    this.errorMessage = '';
+
+    this.authService.forceLogin(
+      this.loginForm.value.email,
+      this.loginForm.value.password
+    ).subscribe({
+      next: (response: LoginResponse) => {
+        this.forceLoginLoading = false;
+        
+        if (response.requires2fa) {
+          this.showSessionConflict = false;
+          this.requires2FA = true;
+          this.tempToken = response.tempToken!;
+          this.offlinePin = response.offlinePin!;
+        } 
+        else if (response.token && response.user) {
+          this.handleSuccessfulLogin(response);
+        } 
+        else {
+          this.errorMessage = response.message || 'Error inesperado en el login forzado';
+        }
+      },
+      error: (error: any) => {
+        this.forceLoginLoading = false;
+        this.errorMessage = error.error?.message || 'Error en login forzado';
+        console.error('Force login error:', error);
+      }
+    });
+  }
+
+  // Cancelar y volver al formulario normal
+  cancelForceLogin() {
+    this.showSessionConflict = false;
+    this.activeSessions = [];
+  }
 
   onVerify2FA(data: {tempToken: string, otp: string}) {
     this.isLoading = true;
@@ -129,7 +177,6 @@ export class LoginComponent {
   }
 
   private handleSuccessfulLogin(response: any) {
-    // Guardar token y datos de usuario usando los métodos existentes
     if (response.token) {
       this.authService.saveToken(response.token);
     }
@@ -137,7 +184,6 @@ export class LoginComponent {
       this.authService.saveUserToStorage(response.user);
     }
     
-    // Redirigir al dashboard
     this.router.navigate(['/dashboard']);
   }
 
@@ -146,5 +192,7 @@ export class LoginComponent {
     this.tempToken = '';
     this.offlinePin = '';
     this.errorMessage = '';
+    this.showSessionConflict = false;
+    this.activeSessions = [];
   }
 }

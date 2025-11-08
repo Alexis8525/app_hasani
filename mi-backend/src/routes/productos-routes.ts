@@ -16,9 +16,10 @@ class ProductoRoutes {
 
     this.router.get('/', ProductoController.getAll);
     this.router.post('/buscar', ProductoController.getByNombre);
+    this.router.post('/buscar-avanzado', ProductoController.searchAdvanced); // NUEVA RUTA
     this.router.post('/', ProductoController.create);
-    this.router.put('/', ProductoController.update); // Sin parámetro en la ruta
-    this.router.delete('/', ProductoController.delete); // Sin parámetro en la ruta
+    this.router.put('/', ProductoController.update);
+    this.router.delete('/', ProductoController.delete);
     this.router.get('/inventory/low-stock', ProductoController.getLowStock);
     this.router.get('/alertas-stock', ProductoController.checkStockAlerts);
   }

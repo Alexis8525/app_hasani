@@ -1,58 +1,133 @@
-<!-- two-factor.component.html (mejoras) -->
+<!-- two-factor.component.html -->
 <div class="twofa-container">
-    <div class="twofa-card">
-      <h3>🔐 Verificación en Dos Pasos</h3>
-      <p>Hemos enviado un código de verificación a:</p>
-      <p class="user-email"><strong>{{ email }}</strong></p>
-      
-      <form [formGroup]="otpForm" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <label for="otp">Código de Verificación de 6 dígitos</label>
+  <div class="twofa-card">
+    <!-- Header con icono -->
+    <div class="twofa-header">
+      <div class="icon-container">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M16 11V7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="14" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3 class="twofa-title">Verificación de Seguridad</h3>
+      <p class="twofa-subtitle">Protegiendo tu cuenta</p>
+    </div>
+
+    <!-- Información del usuario -->
+    <div class="user-info">
+      <div class="email-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span>{{ email }}</span>
+      </div>
+      <p class="instruction-text">Hemos enviado un código de verificación de 6 dígitos a tu correo electrónico.</p>
+    </div>
+
+    <!-- Formulario OTP -->
+    <form [formGroup]="otpForm" (ngSubmit)="onSubmit()" class="otp-form">
+      <div class="form-group">
+        <label for="otp" class="input-label">Código de Verificación</label>
+        <div class="otp-input-container">
           <input
             id="otp"
             type="text"
             formControlName="otp"
-            class="form-control"
-            placeholder="000000"
+            class="otp-input"
+            placeholder="••••••"
             maxlength="6"
-            [class.is-invalid]="otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched"
+            [class.input-error]="otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched"
           />
-          <div *ngIf="otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched" class="error-message">
-            Por favor ingresa los 6 dígitos del código
+          <div class="input-decoration"></div>
+        </div>
+        <div *ngIf="otpForm.get('otp')?.invalid && otpForm.get('otp')?.touched" class="error-message">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8V12M12 16H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Por favor ingresa los 6 dígitos del código
+        </div>
+      </div>
+
+      <!-- Opciones de respaldo -->
+      <div class="backup-options">
+        <div class="backup-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M16 11V7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>Opciones alternativas</span>
+        </div>
+        
+        <div class="offline-pin-section">
+          <div class="pin-display">
+            <span class="pin-label">PIN de respaldo:</span>
+            <code class="offline-pin">{{ offlinePin }}</code>
           </div>
+          <small class="pin-help">Usa este código si no recibes el correo electrónico</small>
         </div>
-  
-        <!-- Información del token (opcional) -->
-        <div class="token-info" *ngIf="showTokenInfo">
-          <p><small>Token temporal: {{ tempToken | slice:0:20 }}...</small></p>
-        </div>
-  
-        <div class="alert-info">
-          <p><strong>💡 ¿No recibiste el código?</strong></p>
-          <p>PIN de respaldo: <code class="offline-pin">{{ offlinePin }}</code></p>
-          <small>Usa este PIN si no recibes el código por correo</small>
-          
+
+        <div class="resend-section">
           <button type="button" class="btn-resend" (click)="resendCode()" [disabled]="!canResend">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23 4V10H17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M1 20V14H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.51 9C4.01717 7.56678 4.87913 6.2854 6.01547 5.27542C7.1518 4.26543 8.52547 3.55976 10.0083 3.22426C11.4911 2.88875 13.0348 2.93434 14.4952 3.35677C15.9556 3.77921 17.2853 4.56471 18.36 5.64L23 10M1 14L5.64 18.36C6.71475 19.4353 8.04437 20.2208 9.50481 20.6432C10.9652 21.0657 12.5089 21.1113 13.9917 20.7757C15.4745 20.4402 16.8482 19.7346 17.9845 18.7246C19.1209 17.7146 19.9828 16.4332 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             {{ canResend ? 'Reenviar código' : 'Reenviar en ' + resendCooldown + 's' }}
           </button>
         </div>
-  
-        <div *ngIf="errorMessage" class="alert-error">
-          {{ errorMessage }}
-        </div>
-  
+      </div>
+
+      <!-- Mensajes de estado -->
+      <div *ngIf="errorMessage" class="alert-error">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 14L12 12M12 12L14 10M12 12L10 10M12 12L14 14M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="action-buttons">
         <button type="submit" class="btn btn-primary" [disabled]="isLoading || otpForm.invalid">
-          {{ isLoading ? '⏳ Verificando...' : '✅ Verificar código' }}
+          <span *ngIf="!isLoading">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Verificar identidad
+          </span>
+          <span *ngIf="isLoading" class="loading-text">
+            <div class="spinner"></div>
+            Verificando...
+          </span>
         </button>
-  
+
         <button type="button" class="btn btn-secondary" (click)="useOfflinePin()" [disabled]="isLoading">
-          🔑 Usar PIN offline
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M16 11V7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Usar PIN offline
         </button>
-  
-        <button type="button" class="btn btn-link" (click)="goBack.emit()">
-          ← Volver al login
+
+        <button type="button" class="btn btn-text" (click)="goBack.emit()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Volver al inicio de sesión
         </button>
-      </form>
+      </div>
+    </form>
+
+    <!-- Footer informativo -->
+    <div class="security-footer">
+      <div class="security-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Verificación de seguridad activa
+      </div>
     </div>
   </div>
-  
+</div>

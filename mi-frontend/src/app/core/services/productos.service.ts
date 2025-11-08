@@ -1,4 +1,3 @@
-// services/productos.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -35,6 +34,13 @@ export interface StockAlerta {
   nivel_alerta: string;
 }
 
+export interface SearchCriteria {
+  termino?: string;
+  codigo?: string;
+  categoria?: string;
+  nombre?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -47,9 +53,14 @@ export class ProductosService {
     return this.http.get<ApiResponse<Producto[]>>(this.apiUrl);
   }
 
-  // Buscar producto por nombre
+  // Buscar producto por nombre (mantener para compatibilidad)
   getByNombre(nombre: string): Observable<ApiResponse<Producto[]>> {
     return this.http.post<ApiResponse<Producto[]>>(`${this.apiUrl}/buscar`, { nombre });
+  }
+
+  // Nueva búsqueda avanzada
+  searchAdvanced(criteria: SearchCriteria): Observable<ApiResponse<Producto[]>> {
+    return this.http.post<ApiResponse<Producto[]>>(`${this.apiUrl}/buscar-avanzado`, criteria);
   }
 
   // Crear nuevo producto
