@@ -3,11 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UsuariosService, Usuario, OfflinePin, PinResponse, ApiResponse } from '../../core/services/usuarios.service';
+import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
   templateUrl: './usuarios.component.html',
   styleUrls: ['./usuarios.component.css']
 })
@@ -25,22 +26,28 @@ export class UsuariosComponent implements OnInit {
   
   // Estados de UI
   isLoading = false;
-  isEditing = false;
   errorMessage = '';
   successMessage = '';
-  showPinManagement = false;
+  
+  // Estados de modales
+  showCreateModal = false;
+  showEditModal = false;
+  showDeleteModal = false;
+  showPinManagementModal = false;
+  showQrCodeModal = false;
+  
+  // Datos seleccionados
   selectedUser: Usuario | null = null;
   pinResponse: PinResponse | null = null;
-  showQrCode = false;
 
-  // Roles disponibles basados en tu esquema
+  // Roles disponibles
   roles = ['admin', 'user'];
 
   constructor() {
     // Formulario para crear/editar usuarios
     this.usuarioForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.minLength(8)]],
       role: ['user', [Validators.required]],
       phone: ['', [Validators.required, Validators.pattern('^[0-9]{10,15}$')]],
       two_factor_enabled: [false]
@@ -64,7 +71,6 @@ export class UsuariosComponent implements OnInit {
     this.usuariosService.getAll().subscribe({
       next: (response: any) => {
         this.isLoading = false;
-        // Manejar diferentes formatos de respuesta
         if (Array.isArray(response)) {
           this.usuarios = response;
         } else if (response.data && Array.isArray(response.data)) {
@@ -83,7 +89,74 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  // Crear nuevo usuario
+  // Métodos para abrir modales
+  openCreateModal() {
+    this.usuarioForm.reset({
+      role: 'user',
+      two_factor_enabled: false
+    });
+    this.usuarioForm.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
+    this.usuarioForm.get('password')?.updateValueAndValidity();
+    this.showCreateModal = true;
+  }
+
+  openEditModal(usuario: Usuario) {
+    this.selectedUser = usuario;
+    this.usuarioForm.patchValue({
+      email: usuario.email,
+      role: usuario.role,
+      phone: usuario.phone,
+      two_factor_enabled: usuario.two_factor_enabled,
+      password: ''
+    });
+    this.usuarioForm.get('password')?.clearValidators();
+    this.usuarioForm.get('password')?.setValidators([Validators.minLength(8)]);
+    this.usuarioForm.get('password')?.updateValueAndValidity();
+    this.showEditModal = true;
+  }
+
+  openDeleteModal(usuario: Usuario) {
+    this.selectedUser = usuario;
+    this.showDeleteModal = true;
+  }
+
+  openPinManagementModal(usuario: Usuario) {
+    this.selectedUser = usuario;
+    this.showPinManagementModal = true;
+    this.loadActivePins();
+  }
+
+  // Métodos para cerrar modales
+  closeCreateModal() {
+    this.showCreateModal = false;
+    this.usuarioForm.reset({
+      role: 'user',
+      two_factor_enabled: false
+    });
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.selectedUser = null;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.selectedUser = null;
+  }
+
+  closePinManagementModal() {
+    this.showPinManagementModal = false;
+    this.selectedUser = null;
+    this.activePins = [];
+  }
+
+  closeQrCodeModal() {
+    this.showQrCodeModal = false;
+    this.pinResponse = null;
+  }
+
+  // Acciones CRUD
   onCreate() {
     if (this.usuarioForm.valid) {
       this.isLoading = true;
@@ -95,20 +168,16 @@ export class UsuariosComponent implements OnInit {
           if (response.code === 0 || response.message) {
             this.successMessage = response.message || 'Usuario creado exitosamente';
             
-            // Mostrar PIN y QR si están disponibles
             if (response.offlinePin || response.qrCodeUrl) {
               this.pinResponse = {
                 offlinePin: response.offlinePin,
                 qrCodeUrl: response.qrCodeUrl,
                 expiresAt: response.expiresAt ? new Date(response.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
               };
-              this.showQrCode = true;
+              this.showQrCodeModal = true;
             }
             
-            this.usuarioForm.reset({
-              role: 'user',
-              two_factor_enabled: false
-            });
+            this.closeCreateModal();
             this.loadUsuarios();
             this.clearMessagesAfterDelay();
           } else {
@@ -124,29 +193,11 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Preparar formulario para edición
-  onEdit(usuario: Usuario) {
-    this.isEditing = true;
-    this.selectedUser = usuario;
-    this.usuarioForm.patchValue({
-      email: usuario.email,
-      role: usuario.role,
-      phone: usuario.phone,
-      two_factor_enabled: usuario.two_factor_enabled,
-      password: '' // No mostrar contraseña actual
-    });
-    // Quitar validación requerida para password en edición
-    this.usuarioForm.get('password')?.clearValidators();
-    this.usuarioForm.get('password')?.updateValueAndValidity();
-  }
-
-  // Actualizar usuario
   onUpdate() {
     if (this.usuarioForm.valid && this.selectedUser) {
       this.isLoading = true;
       const updateData = this.usuarioForm.value;
       
-      // Si no se proporcionó nueva contraseña, eliminar el campo
       if (!updateData.password) {
         const { password, ...dataWithoutPassword } = updateData;
         this.updateUser(dataWithoutPassword);
@@ -163,7 +214,7 @@ export class UsuariosComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0 || response.message) {
             this.successMessage = response.message || 'Usuario actualizado exitosamente';
-            this.cancelEdit();
+            this.closeEditModal();
             this.loadUsuarios();
             this.clearMessagesAfterDelay();
           } else {
@@ -179,15 +230,15 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Eliminar usuario
-  onDelete(usuario: Usuario) {
-    if (confirm(`¿Estás seguro de que quieres eliminar al usuario "${usuario.email}"?`)) {
+  onDelete() {
+    if (this.selectedUser) {
       this.isLoading = true;
-      this.usuariosService.delete(usuario.email).subscribe({
+      this.usuariosService.delete(this.selectedUser.email).subscribe({
         next: (response: ApiResponse<void>) => {
           this.isLoading = false;
           if (response.code === 0 || response.message) {
             this.successMessage = response.message || 'Usuario eliminado exitosamente';
+            this.closeDeleteModal();
             this.loadUsuarios();
             this.clearMessagesAfterDelay();
           } else {
@@ -203,14 +254,7 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Gestionar PINs offline
-  onManagePins(usuario: Usuario) {
-    this.selectedUser = usuario;
-    this.showPinManagement = true;
-    this.loadActivePins();
-  }
-
-  // Cargar PINs activos
+  // Gestión de PINs
   loadActivePins() {
     if (this.selectedUser) {
       this.isLoading = true;
@@ -234,7 +278,6 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Ejecutar acción de PIN
   onPinAction() {
     if (this.selectedUser && this.pinForm.valid) {
       const action = this.pinForm.get('pinAction')?.value;
@@ -248,7 +291,6 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Generar PIN offline
   generateOfflinePin() {
     if (this.selectedUser) {
       this.usuariosService.generateOfflinePin(this.selectedUser.email).subscribe({
@@ -260,7 +302,7 @@ export class UsuariosComponent implements OnInit {
               qrCodeUrl: response.qrCodeUrl,
               expiresAt: response.expiresAt ? new Date(response.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             };
-            this.showQrCode = true;
+            this.showQrCodeModal = true;
             this.successMessage = response.message || 'PIN offline generado exitosamente';
             this.loadActivePins();
             this.clearMessagesAfterDelay();
@@ -277,7 +319,6 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Regenerar PIN offline
   regenerateOfflinePin() {
     if (this.selectedUser) {
       this.usuariosService.regenerateOfflinePin(this.selectedUser.email).subscribe({
@@ -289,7 +330,7 @@ export class UsuariosComponent implements OnInit {
               qrCodeUrl: response.qrCodeUrl,
               expiresAt: response.expiresAt ? new Date(response.expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             };
-            this.showQrCode = true;
+            this.showQrCodeModal = true;
             this.successMessage = response.message || 'PIN offline regenerado exitosamente';
             this.loadActivePins();
             this.clearMessagesAfterDelay();
@@ -306,9 +347,8 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Revocar PIN offline
   onRevokePin(pin: string) {
-    if (this.selectedUser && confirm(`¿Estás seguro de que quieres revocar el PIN ${pin}?`)) {
+    if (this.selectedUser) {
       this.isLoading = true;
       this.usuariosService.revokeOfflinePin(this.selectedUser.email, pin).subscribe({
         next: (response: ApiResponse<void>) => {
@@ -330,35 +370,7 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
-  // Cerrar gestión de PINs
-  closePinManagement() {
-    this.showPinManagement = false;
-    this.selectedUser = null;
-    this.activePins = [];
-    this.pinResponse = null;
-    this.showQrCode = false;
-  }
-
-  // Cerrar QR code
-  closeQrCode() {
-    this.showQrCode = false;
-    this.pinResponse = null;
-  }
-
-  // Cancelar edición
-  cancelEdit() {
-    this.isEditing = false;
-    this.selectedUser = null;
-    this.usuarioForm.reset({
-      role: 'user',
-      two_factor_enabled: false
-    });
-    // Restaurar validación requerida para password
-    this.usuarioForm.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
-    this.usuarioForm.get('password')?.updateValueAndValidity();
-  }
-
-  // Limpiar mensajes después de un tiempo
+  // Métodos auxiliares
   private clearMessagesAfterDelay() {
     setTimeout(() => {
       this.errorMessage = '';
@@ -366,13 +378,11 @@ export class UsuariosComponent implements OnInit {
     }, 5000);
   }
 
-  // Validar campo del formulario
   isFieldInvalid(fieldName: string): boolean {
     const field = this.usuarioForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Obtener mensaje de error para campo
   getFieldError(fieldName: string): string {
     const field = this.usuarioForm.get(fieldName);
     if (field?.errors) {
@@ -384,7 +394,6 @@ export class UsuariosComponent implements OnInit {
     return '';
   }
 
-  // Formatear fecha
   formatDate(date: string | Date | undefined): string {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('es-ES', {
@@ -396,15 +405,13 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  // Verificar si un PIN está próximo a expirar
   isPinExpiring(expiresAt: Date): boolean {
     const now = new Date();
     const expiration = new Date(expiresAt);
     const daysUntilExpiration = (expiration.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-    return daysUntilExpiration <= 7; // Expira en 7 días o menos
+    return daysUntilExpiration <= 7;
   }
 
-  // Obtener texto del rol
   getRoleText(role: string): string {
     const roleTexts: { [key: string]: string } = {
       'admin': 'Administrador',
@@ -413,7 +420,6 @@ export class UsuariosComponent implements OnInit {
     return roleTexts[role] || role;
   }
 
-  // Obtener estado del 2FA
   get2FAStatus(two_factor_enabled: boolean): string {
     return two_factor_enabled ? 'Activado' : 'Desactivado';
   }

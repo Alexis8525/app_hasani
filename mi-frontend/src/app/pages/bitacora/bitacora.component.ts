@@ -3,11 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BitacoraService, Bitacora } from '../../core/services/bitacora.service';
+import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
   selector: 'app-bitacora',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
   templateUrl: './bitacora.component.html',
   styleUrls: ['./bitacora.component.css']
 })
@@ -28,6 +29,10 @@ export class BitacoraComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   searchMode: 'all' | 'movimiento' | 'proveedor' = 'all';
+  
+  // Estados de modales
+  showCreateModal = false;
+  showSearchModal = false;
 
   constructor() {
     // Formulario para crear registros en bitácora
@@ -53,6 +58,7 @@ export class BitacoraComponent implements OnInit {
   loadBitacora() {
     this.isLoading = true;
     this.errorMessage = '';
+    this.searchMode = 'all';
     
     this.bitacoraService.getAll().subscribe({
       next: (response) => {
@@ -60,9 +66,8 @@ export class BitacoraComponent implements OnInit {
         if (response.code === 0 && response.data) {
           this.bitacora = response.data;
           this.filteredBitacora = response.data;
-          this.searchMode = 'all';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'Error al cargar la bitácora';
         }
       },
       error: (error) => {
@@ -73,7 +78,35 @@ export class BitacoraComponent implements OnInit {
     });
   }
 
-  // Crear nuevo registro en bitácora
+  // Métodos para abrir modales
+  openCreateModal() {
+    this.bitacoraForm.reset();
+    this.showCreateModal = true;
+  }
+
+  openSearchModal() {
+    this.searchForm.reset({
+      searchType: 'movimiento',
+      searchId: ''
+    });
+    this.showSearchModal = true;
+  }
+
+  // Métodos para cerrar modales
+  closeCreateModal() {
+    this.showCreateModal = false;
+    this.bitacoraForm.reset();
+  }
+
+  closeSearchModal() {
+    this.showSearchModal = false;
+    this.searchForm.reset({
+      searchType: 'movimiento',
+      searchId: ''
+    });
+  }
+
+  // Acciones CRUD
   onCreate() {
     if (this.bitacoraForm.valid) {
       this.isLoading = true;
@@ -84,11 +117,11 @@ export class BitacoraComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Registro de bitácora creado exitosamente';
-            this.bitacoraForm.reset();
-            this.loadBitacora(); // Recargar la lista
+            this.closeCreateModal();
+            this.loadBitacora();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al crear registro';
           }
         },
         error: (error) => {
@@ -124,8 +157,11 @@ export class BitacoraComponent implements OnInit {
         if (response.code === 0 && response.data) {
           this.filteredBitacora = response.data;
           this.searchMode = 'movimiento';
+          this.closeSearchModal();
+          this.successMessage = `Se encontraron ${this.filteredBitacora.length} registros para el movimiento ID ${movimientoId}`;
+          this.clearMessagesAfterDelay();
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron registros para este movimiento';
         }
       },
       error: (error) => {
@@ -144,8 +180,11 @@ export class BitacoraComponent implements OnInit {
         if (response.code === 0 && response.data) {
           this.filteredBitacora = response.data;
           this.searchMode = 'proveedor';
+          this.closeSearchModal();
+          this.successMessage = `Se encontraron ${this.filteredBitacora.length} registros para el proveedor ID ${proveedorId}`;
+          this.clearMessagesAfterDelay();
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron registros para este proveedor';
         }
       },
       error: (error) => {
@@ -158,15 +197,11 @@ export class BitacoraComponent implements OnInit {
 
   // Resetear búsqueda
   resetSearch() {
-    this.searchForm.reset({
-      searchType: 'movimiento',
-      searchId: ''
-    });
-    this.searchMode = 'all';
+    this.closeSearchModal();
     this.loadBitacora();
   }
 
-  // Limpiar mensajes después de un tiempo
+  // Métodos auxiliares
   private clearMessagesAfterDelay() {
     setTimeout(() => {
       this.errorMessage = '';
@@ -174,13 +209,11 @@ export class BitacoraComponent implements OnInit {
     }, 5000);
   }
 
-  // Validar campo del formulario
   isFieldInvalid(form: FormGroup, fieldName: string): boolean {
     const field = form.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Obtener mensaje de error para campo
   getFieldError(form: FormGroup, fieldName: string): string {
     const field = form.get(fieldName);
     if (field?.errors) {
@@ -191,7 +224,6 @@ export class BitacoraComponent implements OnInit {
     return '';
   }
 
-  // Formatear fecha
   formatDate(date: string | Date): string {
     return new Date(date).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -202,22 +234,18 @@ export class BitacoraComponent implements OnInit {
     });
   }
 
-  // Obtener clase CSS para el tipo de movimiento
   getTipoClass(tipo: string): string {
     return tipo === 'Entrada' ? 'tipo-entrada' : 'tipo-salida';
   }
 
-  // Obtener icono para el tipo de movimiento
   getTipoIcon(tipo: string): string {
     return tipo === 'Entrada' ? '📥' : '📤';
   }
 
-  // Obtener texto descriptivo para el tipo de movimiento
   getTipoText(tipo: string): string {
     return tipo === 'Entrada' ? 'Entrada' : 'Salida';
   }
 
-  // Obtener texto para el modo de búsqueda actual
   getSearchModeText(): string {
     switch (this.searchMode) {
       case 'movimiento': return 'por Movimiento';

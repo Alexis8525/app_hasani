@@ -2,12 +2,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ProveedoresService, Proveedor } from '../../core//services/proveedores.service';
+import { ProveedoresService, Proveedor } from '../../core/services/proveedores.service';
+import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
   templateUrl: './proveedores.component.html',
   styleUrls: ['./proveedores.component.css']
 })
@@ -25,10 +26,17 @@ export class ProveedoresComponent implements OnInit {
   
   // Estados de UI
   isLoading = false;
-  isEditing = false;
   errorMessage = '';
   successMessage = '';
   searchMode: 'all' | 'search' = 'all';
+  
+  // Estados de modales
+  showCreateModal = false;
+  showEditModal = false;
+  showDeleteModal = false;
+  
+  // Datos seleccionados
+  selectedProveedor: Proveedor | null = null;
 
   constructor() {
     // Formulario para crear/editar proveedores
@@ -52,6 +60,7 @@ export class ProveedoresComponent implements OnInit {
   loadProveedores() {
     this.isLoading = true;
     this.errorMessage = '';
+    this.searchMode = 'all';
     
     this.proveedoresService.getAll().subscribe({
       next: (response) => {
@@ -59,9 +68,8 @@ export class ProveedoresComponent implements OnInit {
         if (response.code === 0 && response.data) {
           this.proveedores = response.data;
           this.filteredProveedores = response.data;
-          this.searchMode = 'all';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'Error al cargar proveedores';
         }
       },
       error: (error) => {
@@ -88,7 +96,7 @@ export class ProveedoresComponent implements OnInit {
           this.filteredProveedores = response.data;
           this.searchMode = 'search';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron proveedores';
         }
       },
       error: (error) => {
@@ -99,7 +107,44 @@ export class ProveedoresComponent implements OnInit {
     });
   }
 
-  // Crear nuevo proveedor
+  // Métodos para abrir modales
+  openCreateModal() {
+    this.proveedorForm.reset();
+    this.showCreateModal = true;
+  }
+
+  openEditModal(proveedor: Proveedor) {
+    this.selectedProveedor = proveedor;
+    this.proveedorForm.patchValue({
+      nombre: proveedor.nombre,
+      telefono: proveedor.telefono || '',
+      contacto: proveedor.contacto || ''
+    });
+    this.showEditModal = true;
+  }
+
+  openDeleteModal(proveedor: Proveedor) {
+    this.selectedProveedor = proveedor;
+    this.showDeleteModal = true;
+  }
+
+  // Métodos para cerrar modales
+  closeCreateModal() {
+    this.showCreateModal = false;
+    this.proveedorForm.reset();
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.selectedProveedor = null;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.selectedProveedor = null;
+  }
+
+  // Acciones CRUD
   onCreate() {
     if (this.proveedorForm.valid) {
       this.isLoading = true;
@@ -110,11 +155,11 @@ export class ProveedoresComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Proveedor creado exitosamente';
-            this.proveedorForm.reset();
-            this.loadProveedores(); // Recargar la lista
+            this.closeCreateModal();
+            this.loadProveedores();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al crear proveedor';
           }
         },
         error: (error) => {
@@ -126,21 +171,10 @@ export class ProveedoresComponent implements OnInit {
     }
   }
 
-  // Preparar formulario para edición
-  onEdit(proveedor: Proveedor) {
-    this.isEditing = true;
-    this.proveedorForm.patchValue({
-      nombre: proveedor.nombre,
-      telefono: proveedor.telefono || '',
-      contacto: proveedor.contacto || ''
-    });
-  }
-
-  // Actualizar proveedor
   onUpdate() {
-    if (this.proveedorForm.valid) {
+    if (this.proveedorForm.valid && this.selectedProveedor) {
       this.isLoading = true;
-      const nombreOriginal = this.proveedorForm.get('nombre')?.value;
+      const nombreOriginal = this.selectedProveedor.nombre;
       const updateData = {
         telefono: this.proveedorForm.get('telefono')?.value,
         contacto: this.proveedorForm.get('contacto')?.value
@@ -151,11 +185,11 @@ export class ProveedoresComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Proveedor actualizado exitosamente';
-            this.cancelEdit();
+            this.closeEditModal();
             this.loadProveedores();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al actualizar proveedor';
           }
         },
         error: (error) => {
@@ -167,19 +201,19 @@ export class ProveedoresComponent implements OnInit {
     }
   }
 
-  // Eliminar proveedor
-  onDelete(nombre: string) {
-    if (confirm(`¿Estás seguro de que quieres eliminar al proveedor "${nombre}"?`)) {
+  onDelete() {
+    if (this.selectedProveedor) {
       this.isLoading = true;
-      this.proveedoresService.delete(nombre).subscribe({
+      this.proveedoresService.delete(this.selectedProveedor.nombre).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Proveedor eliminado exitosamente';
+            this.closeDeleteModal();
             this.loadProveedores();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al eliminar proveedor';
           }
         },
         error: (error) => {
@@ -191,13 +225,13 @@ export class ProveedoresComponent implements OnInit {
     }
   }
 
-  // Cancelar edición
-  cancelEdit() {
-    this.isEditing = false;
-    this.proveedorForm.reset();
+  // Resetear búsqueda
+  resetSearch() {
+    this.searchForm.get('searchTerm')?.setValue('');
+    this.loadProveedores();
   }
 
-  // Limpiar mensajes después de un tiempo
+  // Métodos auxiliares
   private clearMessagesAfterDelay() {
     setTimeout(() => {
       this.errorMessage = '';
@@ -205,20 +239,11 @@ export class ProveedoresComponent implements OnInit {
     }, 5000);
   }
 
-  // Resetear búsqueda
-  resetSearch() {
-    this.searchForm.get('searchTerm')?.setValue('');
-    this.searchMode = 'all';
-    this.loadProveedores();
-  }
-
-  // Validar campo del formulario
   isFieldInvalid(fieldName: string): boolean {
     const field = this.proveedorForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Obtener mensaje de error para campo
   getFieldError(fieldName: string): string {
     const field = this.proveedorForm.get(fieldName);
     if (field?.errors) {
@@ -227,10 +252,5 @@ export class ProveedoresComponent implements OnInit {
       if (field.errors['pattern']) return 'El teléfono debe tener 10 dígitos';
     }
     return '';
-  }
-
-  // Verificar si se puede editar el nombre (solo en creación)
-  canEditNombre(): boolean {
-    return !this.isEditing;
   }
 }

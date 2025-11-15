@@ -3,11 +3,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ClientesService, Cliente } from '../../core/services/clientes.service';
+import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
   templateUrl: './clientes.component.html',
   styleUrls: ['./clientes.component.css']
 })
@@ -25,11 +26,20 @@ export class ClientesComponent implements OnInit {
   
   // Estados de UI
   isLoading = false;
-  isEditing = false;
   errorMessage = '';
   successMessage = '';
   searchMode: 'all' | 'user' | 'nombre' = 'all';
-  currentUserId: number = 1; // Esto debería venir de tu servicio de autenticación
+  
+  // Estados de modales
+  showCreateModal = false;
+  showEditModal = false;
+  showDeleteModal = false;
+  
+  // Datos seleccionados
+  selectedCliente: Cliente | null = null;
+
+  // Usuario actual (debería venir de tu servicio de autenticación)
+  currentUserId: number = 1;
 
   constructor() {
     // Formulario para crear/editar clientes
@@ -41,8 +51,7 @@ export class ClientesComponent implements OnInit {
 
     // Formulario para búsqueda
     this.searchForm = this.fb.group({
-      searchTerm: [''],
-      userId: [this.currentUserId]
+      searchTerm: ['']
     });
   }
 
@@ -54,6 +63,7 @@ export class ClientesComponent implements OnInit {
   loadClientes() {
     this.isLoading = true;
     this.errorMessage = '';
+    this.searchMode = 'all';
     
     this.clientesService.getAll().subscribe({
       next: (response) => {
@@ -62,7 +72,7 @@ export class ClientesComponent implements OnInit {
           this.clientes = response.data;
           this.filteredClientes = response.data;
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'Error al cargar clientes';
         }
       },
       error: (error) => {
@@ -89,7 +99,7 @@ export class ClientesComponent implements OnInit {
           this.filteredClientes = response.data;
           this.searchMode = 'nombre';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron clientes';
         }
       },
       error: (error) => {
@@ -102,21 +112,15 @@ export class ClientesComponent implements OnInit {
 
   // Buscar por usuario
   searchByUser() {
-    const userId = this.searchForm.get('userId')?.value;
-    if (!userId) {
-      this.errorMessage = 'ID de usuario requerido';
-      return;
-    }
-
     this.isLoading = true;
-    this.clientesService.getByUserId(userId).subscribe({
+    this.clientesService.getByUserId(this.currentUserId).subscribe({
       next: (response) => {
         this.isLoading = false;
         if (response.code === 0 && response.data) {
           this.filteredClientes = response.data;
           this.searchMode = 'user';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No tienes clientes asignados';
         }
       },
       error: (error) => {
@@ -127,7 +131,44 @@ export class ClientesComponent implements OnInit {
     });
   }
 
-  // Crear nuevo cliente
+  // Métodos para abrir modales
+  openCreateModal() {
+    this.clienteForm.reset();
+    this.showCreateModal = true;
+  }
+
+  openEditModal(cliente: Cliente) {
+    this.selectedCliente = cliente;
+    this.clienteForm.patchValue({
+      nombre: cliente.nombre,
+      telefono: cliente.telefono || '',
+      contacto: cliente.contacto || ''
+    });
+    this.showEditModal = true;
+  }
+
+  openDeleteModal(cliente: Cliente) {
+    this.selectedCliente = cliente;
+    this.showDeleteModal = true;
+  }
+
+  // Métodos para cerrar modales
+  closeCreateModal() {
+    this.showCreateModal = false;
+    this.clienteForm.reset();
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.selectedCliente = null;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.selectedCliente = null;
+  }
+
+  // Acciones CRUD
   onCreate() {
     if (this.clienteForm.valid) {
       this.isLoading = true;
@@ -141,11 +182,11 @@ export class ClientesComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Cliente creado exitosamente';
-            this.clienteForm.reset();
-            this.loadClientes(); // Recargar la lista
+            this.closeCreateModal();
+            this.loadClientes();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al crear cliente';
           }
         },
         error: (error) => {
@@ -157,21 +198,10 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  // Preparar formulario para edición
-  onEdit(cliente: Cliente) {
-    this.isEditing = true;
-    this.clienteForm.patchValue({
-      nombre: cliente.nombre,
-      telefono: cliente.telefono || '',
-      contacto: cliente.contacto || ''
-    });
-  }
-
-  // Actualizar cliente
   onUpdate() {
-    if (this.clienteForm.valid) {
+    if (this.clienteForm.valid && this.selectedCliente) {
       this.isLoading = true;
-      const nombreOriginal = this.clienteForm.get('nombre')?.value;
+      const nombreOriginal = this.selectedCliente.nombre;
       const updateData = {
         telefono: this.clienteForm.get('telefono')?.value,
         contacto: this.clienteForm.get('contacto')?.value
@@ -182,11 +212,11 @@ export class ClientesComponent implements OnInit {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Cliente actualizado exitosamente';
-            this.cancelEdit();
+            this.closeEditModal();
             this.loadClientes();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al actualizar cliente';
           }
         },
         error: (error) => {
@@ -198,19 +228,19 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  // Eliminar cliente
-  onDelete(nombre: string) {
-    if (confirm(`¿Estás seguro de que quieres eliminar al cliente ${nombre}?`)) {
+  onDelete() {
+    if (this.selectedCliente) {
       this.isLoading = true;
-      this.clientesService.delete(nombre).subscribe({
+      this.clientesService.delete(this.selectedCliente.nombre).subscribe({
         next: (response) => {
           this.isLoading = false;
           if (response.code === 0) {
             this.successMessage = 'Cliente eliminado exitosamente';
+            this.closeDeleteModal();
             this.loadClientes();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al eliminar cliente';
           }
         },
         error: (error) => {
@@ -222,13 +252,13 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  // Cancelar edición
-  cancelEdit() {
-    this.isEditing = false;
-    this.clienteForm.reset();
+  // Resetear búsqueda
+  resetSearch() {
+    this.searchForm.get('searchTerm')?.setValue('');
+    this.loadClientes();
   }
 
-  // Limpiar mensajes después de un tiempo
+  // Métodos auxiliares
   private clearMessagesAfterDelay() {
     setTimeout(() => {
       this.errorMessage = '';
@@ -236,20 +266,11 @@ export class ClientesComponent implements OnInit {
     }, 5000);
   }
 
-  // Resetear búsqueda
-  resetSearch() {
-    this.searchForm.get('searchTerm')?.setValue('');
-    this.searchMode = 'all';
-    this.loadClientes();
-  }
-
-  // Validar campo del formulario
   isFieldInvalid(fieldName: string): boolean {
     const field = this.clienteForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Obtener mensaje de error para campo
   getFieldError(fieldName: string): string {
     const field = this.clienteForm.get(fieldName);
     if (field?.errors) {

@@ -21,6 +21,7 @@ export interface Movimiento {
 export interface ProductoStockBajo {
   id_producto: number;
   nombre: string;
+  codigo?: string; // Hacerla opcional
   stock_actual: number;
   stock_minimo: number;
   diferencia: number;

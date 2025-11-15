@@ -1,160 +1,236 @@
 <!-- movimientos.component.html -->
 <div class="movimientos-container">
-    <h2>Gestión de Movimientos de Inventario</h2>
-  
-    <!-- Mensajes de estado -->
-    <div *ngIf="errorMessage" class="alert alert-error">
-      {{ errorMessage }}
+  <h2>Gestión de Movimientos de Inventario</h2>
+
+  <!-- Mensajes de estado -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+
+  <!-- Botones principales de acción -->
+  <div class="main-actions">
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      Registrar Movimiento
+    </button>
+    <button class="btn btn-secondary" (click)="loadMovimientos()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Ver Todos los Movimientos' }}
+    </button>
+    <button class="btn btn-warning" (click)="openStockAlertsModal()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Ver Alertas de Stock' }}
+    </button>
+    <button class="btn btn-info" (click)="openSearchModal()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Buscar Movimientos' }}
+    </button>
+  </div>
+
+  <!-- Lista de movimientos -->
+  <div class="list-section">
+    <h3>
+      {{ 
+        searchMode === 'all' ? 'Todos los Movimientos' :
+        searchMode === 'producto' ? 'Movimientos del Producto' + (searchOriginalTerm ? ` "${searchOriginalTerm}"` : '') :
+        searchMode === 'date-range' ? 'Movimientos por Fecha' :
+        'Movimientos'
+      }} ({{ filteredMovimientos.length }})
+    </h3>
+
+    <div *ngIf="isLoading" class="loading">
+      Cargando movimientos...
     </div>
-  
-    <div *ngIf="successMessage" class="alert alert-success">
-      {{ successMessage }}
+
+    <div *ngIf="!isLoading && filteredMovimientos.length === 0" class="no-data">
+      <div *ngIf="searchMode === 'producto'">
+        No se encontraron movimientos para este producto
+      </div>
+      <div *ngIf="searchMode === 'date-range'">
+        No se encontraron movimientos en el rango de fechas seleccionado
+      </div>
+      <div *ngIf="searchMode === 'all'">
+        No hay movimientos registrados en el sistema
+      </div>
     </div>
-  
-    <!-- Alertas de Stock -->
-    <div *ngIf="showStockAlerts" class="stock-alerts-section">
-      <div class="alerts-header">
-        <h3>Alertas de Stock Bajo</h3>
-        <button class="btn btn-secondary btn-sm" (click)="closeStockAlerts()">Cerrar</button>
-      </div>
-      <div *ngIf="productosStockBajo.length === 0" class="no-alerts">
-        No hay alertas de stock en este momento
-      </div>
-      <div *ngIf="productosStockBajo.length > 0" class="alerts-grid">
-        <div *ngFor="let alerta of productosStockBajo" class="alerta-card" [class]="getAlertLevelClass(alerta)">
-          <h4>{{ alerta.nombre }}</h4>
-          <p><strong>Stock Actual:</strong> {{ alerta.stock_actual }}</p>
-          <p><strong>Stock Mínimo:</strong> {{ alerta.stock_minimo }}</p>
-          <p><strong>Diferencia:</strong> {{ alerta.diferencia }}</p>
-          <p><strong>Nivel:</strong> {{ alerta.nivel_alerta }}</p>
+
+    <div *ngIf="!isLoading && filteredMovimientos.length > 0" class="movimientos-grid">
+      <div *ngFor="let movimiento of filteredMovimientos" class="movimiento-card" [class]="getTipoClass(movimiento.tipo)">
+        <div class="movimiento-header">
+          <span class="tipo-icon">{{ getTipoIcon(movimiento.tipo) }}</span>
+          <h4>{{ getTipoText(movimiento.tipo) }}</h4>
+          <span class="fecha">{{ formatDate(movimiento.fecha) }}</span>
+        </div>
+        
+        <div class="movimiento-info">
+          <p><strong>Producto:</strong> {{ movimiento.producto_nombre }}</p>
+          <p><strong>Cantidad:</strong> {{ movimiento.cantidad }}</p>
+          <p><strong>Responsable:</strong> {{ movimiento.responsable_nombre }}</p>
+          <p *ngIf="movimiento.referencia"><strong>Referencia:</strong> {{ movimiento.referencia }}</p>
+          <p *ngIf="movimiento.cliente_nombre"><strong>Cliente:</strong> {{ movimiento.cliente_nombre }}</p>
+          <p><strong>ID Movimiento:</strong> {{ movimiento.id_movimiento }}</p>
         </div>
       </div>
     </div>
-  
-    <!-- Formulario de creación de movimientos -->
-    <div class="form-section">
-      <h3>Registrar Nuevo Movimiento</h3>
-      <form [formGroup]="movimientoForm" (ngSubmit)="onCreate()" class="movimiento-form">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tipo">Tipo de Movimiento *</label>
-            <select
-              id="tipo"
-              formControlName="tipo"
-              class="form-control"
-              [class.is-invalid]="isFieldInvalid(movimientoForm, 'tipo')"
-            >
-              <option value="Entrada">Entrada</option>
-              <option value="Salida">Salida</option>
-            </select>
-            <div *ngIf="isFieldInvalid(movimientoForm, 'tipo')" class="error-message">
-              {{ getFieldError(movimientoForm, 'tipo') }}
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="nombreProducto">Nombre del Producto *</label>
-            <input
-              id="nombreProducto"
-              type="text"
-              formControlName="nombreProducto"
-              class="form-control"
-              [class.is-invalid]="isFieldInvalid(movimientoForm, 'nombreProducto')"
-              placeholder="Ingrese el nombre del producto"
-            />
-            <div *ngIf="isFieldInvalid(movimientoForm, 'nombreProducto')" class="error-message">
-              {{ getFieldError(movimientoForm, 'nombreProducto') }}
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="cantidad">Cantidad *</label>
-            <input
-              id="cantidad"
-              type="number"
-              formControlName="cantidad"
-              class="form-control"
-              [class.is-invalid]="isFieldInvalid(movimientoForm, 'cantidad')"
-              min="1"
-              max="1000000"
-              step="1"
-            />
-            <div *ngIf="isFieldInvalid(movimientoForm, 'cantidad')" class="error-message">
-              {{ getFieldError(movimientoForm, 'cantidad') }}
-            </div>
-          </div>
-        </div>
-  
-        <div class="form-row">
-          <div class="form-group">
-            <label for="referencia">Referencia</label>
-            <input
-              id="referencia"
-              type="text"
-              formControlName="referencia"
-              class="form-control"
-              [class.is-invalid]="isFieldInvalid(movimientoForm, 'referencia')"
-              placeholder="Número de factura, orden, etc."
-            />
-            <div *ngIf="isFieldInvalid(movimientoForm, 'referencia')" class="error-message">
-              {{ getFieldError(movimientoForm, 'referencia') }}
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label for="id_cliente">Cliente (opcional)</label>
-            <input
-              id="id_cliente"
-              type="number"
-              formControlName="id_cliente"
-              class="form-control"
-              [class.is-invalid]="isFieldInvalid(movimientoForm, 'id_cliente')"
-              placeholder="ID del cliente"
-              min="1"
-            />
-            <div *ngIf="isFieldInvalid(movimientoForm, 'id_cliente')" class="error-message">
-              {{ getFieldError(movimientoForm, 'id_cliente') }}
-            </div>
-          </div>
-        </div>
-  
-        <div class="form-actions">
-          <button 
-            type="submit" 
-            class="btn btn-primary" 
-            [disabled]="isLoading || movimientoForm.invalid"
+  </div>
+
+  <!-- Modal para crear movimiento -->
+  <app-modal 
+    [isOpen]="showCreateModal" 
+    [title]="'Registrar Nuevo Movimiento'"
+    [size]="'large'"
+    [showFooter]="false"
+    (closed)="closeCreateModal()">
+    
+    <form [formGroup]="movimientoForm" (ngSubmit)="onCreate()" class="movimiento-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tipo">Tipo de Movimiento *</label>
+          <select
+            id="tipo"
+            formControlName="tipo"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid(movimientoForm, 'tipo')"
           >
-            {{ isLoading ? 'Procesando...' : 'Registrar Movimiento' }}
-          </button>
+            <option value="Entrada">📥 Entrada</option>
+            <option value="Salida">📤 Salida</option>
+          </select>
+          <div *ngIf="isFieldInvalid(movimientoForm, 'tipo')" class="error-message">
+            {{ getFieldError(movimientoForm, 'tipo') }}
+          </div>
         </div>
-      </form>
-    </div>
-  
-    <!-- Sección de búsqueda y reportes -->
-    <div class="search-section">
-      <h3>Buscar y Reportes</h3>
-      
+
+        <div class="form-group">
+          <label for="nombreProducto">Nombre del Producto *</label>
+          <input
+            id="nombreProducto"
+            type="text"
+            formControlName="nombreProducto"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid(movimientoForm, 'nombreProducto')"
+            placeholder="Ingrese el nombre del producto"
+          />
+          <div *ngIf="isFieldInvalid(movimientoForm, 'nombreProducto')" class="error-message">
+            {{ getFieldError(movimientoForm, 'nombreProducto') }}
+          </div>
+          <small class="form-help">Nombre exacto del producto en el inventario</small>
+        </div>
+
+        <div class="form-group">
+          <label for="cantidad">Cantidad *</label>
+          <input
+            id="cantidad"
+            type="number"
+            formControlName="cantidad"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid(movimientoForm, 'cantidad')"
+            min="1"
+            max="1000000"
+            step="1"
+          />
+          <div *ngIf="isFieldInvalid(movimientoForm, 'cantidad')" class="error-message">
+            {{ getFieldError(movimientoForm, 'cantidad') }}
+          </div>
+          <small class="form-help">Cantidad a ingresar o retirar del inventario</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="referencia">Referencia</label>
+          <input
+            id="referencia"
+            type="text"
+            formControlName="referencia"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid(movimientoForm, 'referencia')"
+            placeholder="Número de factura, orden, etc."
+          />
+          <div *ngIf="isFieldInvalid(movimientoForm, 'referencia')" class="error-message">
+            {{ getFieldError(movimientoForm, 'referencia') }}
+          </div>
+          <small class="form-help">Opcional - Referencia del movimiento</small>
+        </div>
+
+        <div class="form-group">
+          <label for="id_cliente">Cliente (opcional)</label>
+          <input
+            id="id_cliente"
+            type="number"
+            formControlName="id_cliente"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid(movimientoForm, 'id_cliente')"
+            placeholder="ID del cliente"
+            min="1"
+          />
+          <div *ngIf="isFieldInvalid(movimientoForm, 'id_cliente')" class="error-message">
+            {{ getFieldError(movimientoForm, 'id_cliente') }}
+          </div>
+          <small class="form-help">Opcional - ID del cliente relacionado</small>
+        </div>
+      </div>
+
+      <div class="movement-info">
+        <h4>Información del Movimiento</h4>
+        <p><strong>Responsable:</strong> Usuario {{ currentResponsableId }}</p>
+        <p><strong>Fecha:</strong> {{ getCurrentDateTime() }}</p>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="isLoading || movimientoForm.invalid"
+        >
+          {{ isLoading ? 'Registrando...' : 'Registrar Movimiento' }}
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="closeCreateModal()"
+          [disabled]="isLoading"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal para buscar movimientos -->
+  <app-modal 
+    [isOpen]="showSearchModal" 
+    [title]="'Buscar Movimientos'"
+    [size]="'large'"
+    [showFooter]="false"
+    (closed)="closeSearchModal()">
+    
+    <div class="search-modal-content">
       <!-- Búsqueda por producto -->
       <div class="search-group">
-        <h4>Buscar por Producto</h4>
+        <h4>🔍 Buscar por Producto</h4>
         <form [formGroup]="searchForm" (ngSubmit)="searchByProducto()" class="search-form">
-          <div class="search-controls">
+          <div class="form-group">
+            <label for="searchTerm">Nombre del Producto</label>
             <input
+              id="searchTerm"
               type="text"
               formControlName="searchTerm"
               placeholder="Ingrese nombre del producto..."
               class="form-control"
             />
+            <small class="form-help">Busca movimientos por nombre de producto</small>
+          </div>
+          <div class="form-actions">
             <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-              Buscar
+              {{ isLoading ? 'Buscando...' : 'Buscar por Producto' }}
             </button>
           </div>
         </form>
       </div>
-  
+
       <!-- Búsqueda por rango de fechas -->
       <div class="search-group">
-        <h4>Reporte por Rango de Fechas</h4>
+        <h4>📅 Reporte por Rango de Fechas</h4>
         <form [formGroup]="dateRangeForm" (ngSubmit)="searchByDateRange()" class="date-range-form">
           <div class="form-row">
             <div class="form-group">
@@ -177,65 +253,63 @@
                 [class.is-invalid]="isFieldInvalid(dateRangeForm, 'fechaFin')"
               />
             </div>
-            <div class="form-group">
-              <button type="submit" class="btn btn-primary" [disabled]="isLoading || dateRangeForm.invalid">
-                Generar Reporte
-              </button>
-            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading || dateRangeForm.invalid">
+              {{ isLoading ? 'Generando...' : 'Generar Reporte' }}
+            </button>
           </div>
         </form>
       </div>
-  
-      <!-- Acciones adicionales -->
-      <div class="action-buttons">
+
+      <div class="search-actions">
         <button type="button" class="btn btn-secondary" (click)="resetSearch()" [disabled]="isLoading">
-          Ver Todos
-        </button>
-        <button type="button" class="btn btn-warning" (click)="loadProductosStockBajo()" [disabled]="isLoading">
-          Productos Stock Bajo
-        </button>
-        <button type="button" class="btn btn-danger" (click)="checkStockAlerts()" [disabled]="isLoading">
-          Verificar Alertas
+          Ver Todos los Movimientos
         </button>
       </div>
     </div>
-  
-    <!-- Lista de movimientos -->
-    <div class="list-section">
-      <h3>
-        {{ 
-          searchMode === 'all' ? 'Todos los Movimientos' :
-          searchMode === 'producto' ? 'Movimientos del Producto' + (searchOriginalTerm ? ` "${searchOriginalTerm}"` : '') :
-          searchMode === 'date-range' ? 'Movimientos por Fecha' :
-          'Alertas de Stock'
-        }} ({{ filteredMovimientos.length }})
-      </h3>
-  
-      <div *ngIf="isLoading" class="loading">
-        Cargando movimientos...
+  </app-modal>
+
+  <!-- Modal para alertas de stock -->
+  <app-modal 
+    [isOpen]="showStockAlertsModal" 
+    [title]="'Alertas de Stock Bajo'"
+    [size]="'large'"
+    [showFooter]="false"
+    (closed)="closeStockAlertsModal()">
+    
+    <div class="stock-alerts-content">
+      <div class="alerts-actions">
+        <button class="btn btn-primary" (click)="loadProductosStockBajo()" [disabled]="isLoading">
+          {{ isLoading ? 'Actualizando...' : 'Actualizar Alertas' }}
+        </button>
       </div>
-  
-      <div *ngIf="!isLoading && filteredMovimientos.length === 0" class="no-data">
-        No se encontraron movimientos
+
+      <div *ngIf="productosStockBajo.length === 0" class="no-alerts">
+        <div class="no-alerts-icon">✅</div>
+        <h4>No hay alertas de stock en este momento</h4>
+        <p>Todos los productos tienen stock suficiente</p>
       </div>
-  
-      <div *ngIf="!isLoading && filteredMovimientos.length > 0" class="movimientos-grid">
-        <div *ngFor="let movimiento of filteredMovimientos" class="movimiento-card" [class]="getTipoClass(movimiento.tipo)">
-          <div class="movimiento-header">
-            <span class="tipo-icon">{{ getTipoIcon(movimiento.tipo) }}</span>
-            <h4>{{ getTipoText(movimiento.tipo) }}</h4>
-            <span class="fecha">{{ formatDate(movimiento.fecha) }}</span>
+
+      <div *ngIf="productosStockBajo.length > 0" class="alerts-grid">
+        <div *ngFor="let alerta of productosStockBajo" class="alerta-card" [class]="getAlertLevelClass(alerta)">
+          <div class="alerta-header">
+            <span class="alerta-icon">{{ getAlertIcon(alerta.nivel_alerta) }}</span>
+            <h4>{{ alerta.nombre }}</h4>
+            <span class="alerta-level">{{ alerta.nivel_alerta }}</span>
           </div>
-          
-          <div class="movimiento-info">
-            <p><strong>Producto:</strong> {{ movimiento.producto_nombre }}</p>
-            <p><strong>Cantidad:</strong> {{ movimiento.cantidad }}</p>
-            <p><strong>Responsable:</strong> {{ movimiento.responsable_nombre }}</p>
-            <p *ngIf="movimiento.referencia"><strong>Referencia:</strong> {{ movimiento.referencia }}</p>
-            <p *ngIf="movimiento.cliente_nombre"><strong>Cliente:</strong> {{ movimiento.cliente_nombre }}</p>
-            <p><strong>ID Movimiento:</strong> {{ movimiento.id_movimiento }}</p>
+          <div class="alerta-info">
+            <p><strong>Stock Actual:</strong> {{ alerta.stock_actual }}</p>
+            <p><strong>Stock Mínimo:</strong> {{ alerta.stock_minimo }}</p>
+            <p><strong>Diferencia:</strong> 
+              <span [class]="'diff-' + getAlertLevelClass(alerta)">
+                {{ alerta.diferencia }}
+              </span>
+            </p>
+            <p><strong>ID Producto:</strong> {{ alerta.id_producto }}</p>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </app-modal>
+</div>

@@ -3,11 +3,13 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MovimientosService, Movimiento, ProductoStockBajo } from '../../core/services/movimentos.service';
+import { ModalComponent } from '../../layout/modal/modal.component';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-movimientos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ModalComponent, RouterLink, RouterLinkActive],
   templateUrl: './movimientos.component.html',
   styleUrls: ['./movimientos.component.css']
 })
@@ -29,10 +31,16 @@ export class MovimientosComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
-  searchMode: 'all' | 'producto' | 'date-range' | 'stock-alerts' = 'all';
-  showStockAlerts = false;
+  searchMode: 'all' | 'producto' | 'date-range' = 'all';
   searchOriginalTerm = '';
-  currentResponsableId: number = 1; // Esto debería venir del servicio de autenticación
+  
+  // Estados de modales
+  showCreateModal = false;
+  showSearchModal = false;
+  showStockAlertsModal = false;
+  
+  // Usuario actual (debería venir del servicio de autenticación)
+  currentResponsableId: number = 1;
 
   constructor() {
     // Formulario para crear movimientos
@@ -64,6 +72,7 @@ export class MovimientosComponent implements OnInit {
   loadMovimientos() {
     this.isLoading = true;
     this.errorMessage = '';
+    this.searchMode = 'all';
     
     this.movimientosService.getAll().subscribe({
       next: (response) => {
@@ -71,10 +80,9 @@ export class MovimientosComponent implements OnInit {
         if (response.code === 0 && response.data) {
           this.movimientos = response.data;
           this.filteredMovimientos = response.data;
-          this.searchMode = 'all';
           this.searchOriginalTerm = '';
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'Error al cargar movimientos';
         }
       },
       error: (error) => {
@@ -85,7 +93,49 @@ export class MovimientosComponent implements OnInit {
     });
   }
 
-  // Crear nuevo movimiento
+  // Métodos para abrir modales
+  openCreateModal() {
+    this.movimientoForm.reset({
+      tipo: 'Entrada',
+      cantidad: 1,
+      id_cliente: null
+    });
+    this.showCreateModal = true;
+  }
+
+  openSearchModal() {
+    this.searchForm.reset();
+    this.dateRangeForm.reset();
+    this.showSearchModal = true;
+  }
+
+  openStockAlertsModal() {
+    this.showStockAlertsModal = true;
+    this.loadProductosStockBajo();
+  }
+
+  // Métodos para cerrar modales
+  closeCreateModal() {
+    this.showCreateModal = false;
+    this.movimientoForm.reset({
+      tipo: 'Entrada',
+      cantidad: 1,
+      id_cliente: null
+    });
+  }
+
+  closeSearchModal() {
+    this.showSearchModal = false;
+    this.searchForm.reset();
+    this.dateRangeForm.reset();
+  }
+
+  closeStockAlertsModal() {
+    this.showStockAlertsModal = false;
+    this.productosStockBajo = [];
+  }
+
+  // Acciones CRUD
   onCreate() {
     if (this.movimientoForm.valid) {
       this.isLoading = true;
@@ -98,16 +148,12 @@ export class MovimientosComponent implements OnInit {
         next: (response) => {
           this.isLoading = false;
           if (response.code === 0) {
-            this.successMessage = 'Movimiento creado exitosamente';
-            this.movimientoForm.reset({
-              tipo: 'Entrada',
-              cantidad: 1,
-              id_cliente: null
-            });
-            this.loadMovimientos(); // Recargar la lista
+            this.successMessage = 'Movimiento registrado exitosamente';
+            this.closeCreateModal();
+            this.loadMovimientos();
             this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'Error al registrar movimiento';
           }
         },
         error: (error) => {
@@ -119,11 +165,11 @@ export class MovimientosComponent implements OnInit {
     }
   }
 
-  // Buscar por producto
+  // Búsquedas
   searchByProducto() {
     const nombreProducto = this.searchForm.get('searchTerm')?.value?.trim();
     if (!nombreProducto) {
-      this.loadMovimientos();
+      this.errorMessage = 'Por favor ingrese un término de búsqueda';
       return;
     }
 
@@ -135,8 +181,11 @@ export class MovimientosComponent implements OnInit {
           this.filteredMovimientos = response.data;
           this.searchMode = 'producto';
           this.searchOriginalTerm = response.busquedaOriginal || nombreProducto;
+          this.closeSearchModal();
+          this.successMessage = `Se encontraron ${this.filteredMovimientos.length} movimientos`;
+          this.clearMessagesAfterDelay();
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron movimientos';
         }
       },
       error: (error) => {
@@ -147,7 +196,6 @@ export class MovimientosComponent implements OnInit {
     });
   }
 
-  // Buscar por rango de fechas
   searchByDateRange() {
     if (this.dateRangeForm.valid) {
       const { fechaInicio, fechaFin } = this.dateRangeForm.value;
@@ -166,8 +214,11 @@ export class MovimientosComponent implements OnInit {
             this.filteredMovimientos = response.data;
             this.searchMode = 'date-range';
             this.searchOriginalTerm = '';
+            this.closeSearchModal();
+            this.successMessage = `Se encontraron ${this.filteredMovimientos.length} movimientos en el rango de fechas`;
+            this.clearMessagesAfterDelay();
           } else {
-            this.errorMessage = response.message;
+            this.errorMessage = response.message || 'No se encontraron movimientos en el rango de fechas';
           }
         },
         error: (error) => {
@@ -179,31 +230,7 @@ export class MovimientosComponent implements OnInit {
     }
   }
 
-  // Verificar alertas de stock
-  checkStockAlerts() {
-    this.isLoading = true;
-    this.movimientosService.verificarAlertasStock().subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        if (response.code === 0 && response.data) {
-          this.productosStockBajo = response.data;
-          this.showStockAlerts = true;
-          this.searchMode = 'stock-alerts';
-          this.successMessage = response.message;
-          this.clearMessagesAfterDelay();
-        } else {
-          this.errorMessage = response.message;
-        }
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.errorMessage = 'Error al verificar alertas de stock';
-        console.error('Error checking stock alerts:', error);
-      }
-    });
-  }
-
-  // Obtener productos con stock bajo
+  // Alertas de stock
   loadProductosStockBajo() {
     this.isLoading = true;
     this.movimientosService.getProductosStockBajo().subscribe({
@@ -211,10 +238,10 @@ export class MovimientosComponent implements OnInit {
         this.isLoading = false;
         if (response.code === 0 && response.data) {
           this.productosStockBajo = response.data;
-          this.showStockAlerts = true;
-          this.searchMode = 'stock-alerts';
+          this.successMessage = `Se encontraron ${this.productosStockBajo.length} productos con stock bajo`;
+          this.clearMessagesAfterDelay();
         } else {
-          this.errorMessage = response.message;
+          this.errorMessage = response.message || 'No se encontraron productos con stock bajo';
         }
       },
       error: (error) => {
@@ -225,22 +252,15 @@ export class MovimientosComponent implements OnInit {
     });
   }
 
-  // Cerrar alertas de stock
-  closeStockAlerts() {
-    this.showStockAlerts = false;
-    this.productosStockBajo = [];
-  }
-
   // Resetear búsqueda
   resetSearch() {
-    this.searchForm.get('searchTerm')?.setValue('');
+    this.searchForm.reset();
     this.dateRangeForm.reset();
-    this.searchMode = 'all';
-    this.searchOriginalTerm = '';
+    this.closeSearchModal();
     this.loadMovimientos();
   }
 
-  // Limpiar mensajes después de un tiempo
+  // Métodos auxiliares
   private clearMessagesAfterDelay() {
     setTimeout(() => {
       this.errorMessage = '';
@@ -248,13 +268,11 @@ export class MovimientosComponent implements OnInit {
     }, 5000);
   }
 
-  // Validar campo del formulario
   isFieldInvalid(form: FormGroup, fieldName: string): boolean {
     const field = form.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
-  // Obtener mensaje de error para campo
   getFieldError(form: FormGroup, fieldName: string): string {
     const field = form.get(fieldName);
     if (field?.errors) {
@@ -269,7 +287,6 @@ export class MovimientosComponent implements OnInit {
     return '';
   }
 
-  // Formatear fecha
   formatDate(date: string | Date): string {
     return new Date(date).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -280,28 +297,37 @@ export class MovimientosComponent implements OnInit {
     });
   }
 
-  // Obtener clase CSS para el tipo de movimiento
+  getCurrentDateTime(): string {
+    return new Date().toLocaleString('es-ES');
+  }
+
   getTipoClass(tipo: string): string {
     return tipo === 'Entrada' ? 'tipo-entrada' : 'tipo-salida';
   }
 
-  // Obtener icono para el tipo de movimiento
   getTipoIcon(tipo: string): string {
-    return tipo === 'Entrada' ? '' : '';
+    return tipo === 'Entrada' ? '📥' : '📤';
   }
 
-  // Obtener nivel de alerta para las alertas de stock
+  getTipoText(tipo: string): string {
+    return tipo === 'Entrada' ? 'Entrada de Inventario' : 'Salida de Inventario';
+  }
+
   getAlertLevelClass(alerta: ProductoStockBajo): string {
     switch (alerta.nivel_alerta) {
-      case 'CRÍTICO': return 'alerta-critica';
-      case 'ALTO': return 'alerta-alta';
-      case 'MEDIO': return 'alerta-media';
-      default: return 'alerta-baja';
+      case 'CRÍTICO': return 'critico';
+      case 'ALTO': return 'alto';
+      case 'MEDIO': return 'medio';
+      default: return 'bajo';
     }
   }
 
-  // Obtener texto descriptivo para el tipo de movimiento
-  getTipoText(tipo: string): string {
-    return tipo === 'Entrada' ? 'Entrada de Inventario' : 'Salida de Inventario';
+  getAlertIcon(nivel: string): string {
+    switch (nivel) {
+      case 'CRÍTICO': return '🚨';
+      case 'ALTO': return '⚠️';
+      case 'MEDIO': return '🔶';
+      default: return 'ℹ️';
+    }
   }
 }
