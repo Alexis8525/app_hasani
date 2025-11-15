@@ -1,0 +1,496 @@
+/* two-factor.component.css */
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* ==== Contenedor principal ==== */
+.twofa-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ==== Tarjeta principal ==== */
+.twofa-card {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 440px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.twofa-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+/* ==== Header ==== */
+.twofa-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.icon-container {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.twofa-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+}
+
+.twofa-subtitle {
+  color: #718096;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* ==== Información del usuario ==== */
+.user-info {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.email-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.email-badge svg {
+  color: #667eea;
+}
+
+.instruction-text {
+  color: #718096;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==== Formulario OTP ==== */
+.otp-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-label {
+  display: block;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.otp-input-container {
+  position: relative;
+}
+
+.otp-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-align: center;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  font-family: 'Monaco', 'Consolas', monospace;
+  color: #1a202c;
+}
+
+.otp-input:focus {
+  border-color: #5a67d8;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+  transform: scale(1.02);
+}
+
+
+.otp-input::placeholder {
+  color: #cbd5e0;
+  letter-spacing: 0.3em;
+}
+
+.otp-input.input-error {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.input-decoration {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+.otp-input:focus + .input-decoration {
+  width: 80%;
+}
+
+/* ==== Opciones de respaldo ==== */
+.backup-options {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.backup-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.backup-header svg {
+  color: #667eea;
+}
+
+.offline-pin-section {
+  margin-bottom: 1.25rem;
+}
+
+.pin-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.pin-label {
+  font-weight: 500;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.offline-pin {
+  background: linear-gradient(135deg, #fed7e2, #fbb6ce);
+  color: #97266d;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pin-help {
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.resend-section {
+  text-align: center;
+}
+
+.btn-resend {
+  background: transparent;
+  border: 1px solid #cbd5e0;
+  color: #4a5568;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-resend:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.btn-resend:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==== Mensajes de estado ==== */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e53e3e;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.alert-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fed7d7;
+  color: #c53030;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #feb2b2;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* ==== Botones de acción ==== */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.2), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-secondary {
+  background: white;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-primary:hover::after {
+  opacity: 1;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-text {
+  background: transparent;
+  color: #718096;
+  padding: 0.75rem;
+}
+
+.btn-text:hover:not(:disabled) {
+  color: #667eea;
+  background: #f7fafc;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==== Footer informativo ==== */
+.security-footer {
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f0fff4;
+  color: #38a169;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #c6f6d5;
+}
+
+/* ==== Responsividad ==== */
+@media (max-width: 480px) {
+  .twofa-container {
+    padding: 1rem;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  .twofa-card {
+    padding: 2rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .twofa-title {
+    font-size: 1.5rem;
+  }
+
+  .icon-container {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+
+  .otp-input {
+    font-size: 1.1rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .btn {
+    padding: 0.875rem 1.25rem;
+  }
+}
+
+/* ==== Animaciones ==== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.twofa-card {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* ==== Estados de focus mejorados ==== */
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.otp-input:focus {
+  outline: none;
+}
+/* Mejor contraste para accesibilidad */
+.otp-input {
+  background: #fdfdfd;
+}
+
+.alert-error {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  color: #c53030;
+}
+
+.alert-info {
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  color: #2b6cb0;
+}
+
+/* Sombra más suave para la tarjeta */
+.twofa-card {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+@media (max-width: 400px) {
+  .twofa-card {
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+
+  .otp-input {
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+  }
+
+  .action-buttons {
+    gap: 0.5rem;
+  }
+}

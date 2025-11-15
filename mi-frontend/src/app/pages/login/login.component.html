@@ -1,0 +1,105 @@
+<div class="login-container">
+  <div class="login-card">
+    
+    <!-- Mostrar conflicto de sesiones activas -->
+    <div *ngIf="showSessionConflict" class="session-conflict">
+      <div class="conflict-header">
+        <h3>⚠️ Sesión Activa Detectada</h3>
+      </div>
+      
+      <div class="conflict-content">
+        <p>Ya tienes una sesión activa en otro dispositivo/lugar.</p>
+        
+        <div *ngIf="activeSessions.length > 0" class="active-sessions">
+          <h4>Sesiones Activas:</h4>
+          <div *ngFor="let session of activeSessions" class="session-info">
+            <div class="session-details">
+              <p><strong>Dispositivo:</strong> {{ session.device_info }}</p>
+              <p><strong>IP:</strong> {{ session.ip_address }}</p>
+              <p><strong>Iniciada:</strong> {{ session.created_at | date:'medium' }}</p>
+              <p><strong>Última actividad:</strong> {{ session.last_activity | date:'medium' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="conflict-actions">
+          <p><strong>¿Qué deseas hacer?</strong></p>
+          
+          <button 
+            type="button" 
+            class="btn btn-warning" 
+            (click)="forceLogin()"
+            [disabled]="forceLoginLoading">
+            {{ forceLoginLoading ? 'Procesando...' : 'Cerrar sesiones anteriores e iniciar' }}
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            (click)="cancelForceLogin()">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mostrar formulario de login normal -->
+    <div *ngIf="!requires2FA && !showSessionConflict">
+      <h2>Iniciar Sesión</h2>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">Correo electrónico</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="form-control"
+            [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          />
+          <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" class="error-message">
+            <span *ngIf="loginForm.get('email')?.errors?.['required']">El correo es requerido</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email']">Ingrese un correo válido</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            class="form-control"
+            [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          />
+          <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error-message">
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">La contraseña es requerida</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert-error">
+          {{ errorMessage }}
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading || loginForm.invalid">
+          {{ isLoading ? 'Cargando...' : 'Entrar' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- Mostrar componente de 2FA cuando sea necesario -->
+    <app-two-factor
+      *ngIf="requires2FA"
+      [tempToken]="tempToken"
+      [offlinePin]="offlinePin"
+      [email]="userEmail"
+      [isLoading]="isLoading"
+      [errorMessage]="errorMessage"
+      (verify2FA)="onVerify2FA($event)"
+      (verifyOffline)="onVerifyOffline($event)"
+      (goBack)="onGoBack()"
+    ></app-two-factor>
+
+  </div>
+</div>

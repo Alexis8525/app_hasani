@@ -278,7 +278,6 @@ export class UserController {
     }
   }
 
-  // Método para revocar (invalidar) un PIN offline
   static async revokeOfflinePin(req: Request, res: Response) {
     const { email, pin } = req.body;
 

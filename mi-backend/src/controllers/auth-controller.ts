@@ -52,7 +52,6 @@ export class AuthController {
               'Tu código 2FA',
               `
               <p>Tu código 2FA: <b>${otp}</b></p>
-              <p>Token temporal: <b>${tempToken}</b></p>
             `
             );
           }

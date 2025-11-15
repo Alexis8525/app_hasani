@@ -1,0 +1,376 @@
+<!-- usuarios.component.html -->
+<div class="usuarios-container">
+  <h2>Gestión de Usuarios</h2>
+
+  <!-- Mensajes de estado -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+
+  <!-- Botones principales de acción -->
+  <div class="main-actions">
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      Crear Usuario
+    </button>
+    <button class="btn btn-secondary" (click)="loadUsuarios()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Actualizar Lista' }}
+    </button>
+  </div>
+
+  <!-- Lista de usuarios -->
+  <div class="list-section">
+    <h3>Lista de Usuarios ({{ usuarios.length }})</h3>
+
+    <div *ngIf="isLoading" class="loading">
+      Cargando usuarios...
+    </div>
+
+    <div *ngIf="!isLoading && usuarios.length === 0" class="no-data">
+      No se encontraron usuarios
+    </div>
+
+    <div *ngIf="!isLoading && usuarios.length > 0" class="usuarios-grid">
+      <div *ngFor="let usuario of usuarios" class="usuario-card">
+        <div class="usuario-info">
+          <h4>{{ usuario.email }}</h4>
+          <p><strong>Rol:</strong> {{ getRoleText(usuario.role) }}</p>
+          <p><strong>Teléfono:</strong> {{ usuario.phone }}</p>
+          <p><strong>ID:</strong> {{ usuario.id }}</p>
+          <p><strong>Registrado:</strong> {{ formatDate(usuario.created_at) }}</p>
+          <p><strong>2FA:</strong> {{ get2FAStatus(usuario.two_factor_enabled) }}</p>
+          <p><strong>PIN Secret:</strong> {{ usuario.offline_pin_secret ? 'Configurado' : 'No configurado' }}</p>
+        </div>
+        <div class="usuario-actions">
+          <button 
+            class="btn btn-warning btn-sm" 
+            (click)="openEditModal(usuario)"
+            [disabled]="isLoading"
+            title="Editar usuario"
+          >
+            Editar
+          </button>
+          <button 
+            class="btn btn-info btn-sm" 
+            (click)="openPinManagementModal(usuario)"
+            [disabled]="isLoading"
+            title="Gestionar PINs offline"
+          >
+            PINs
+          </button>
+          <button 
+            class="btn btn-danger btn-sm" 
+            (click)="openDeleteModal(usuario)"
+            [disabled]="isLoading"
+            title="Eliminar usuario"
+          >
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para crear usuario -->
+  <app-modal 
+    [isOpen]="showCreateModal" 
+    [title]="'Crear Nuevo Usuario'"
+    [showFooter]="false"
+    (closed)="closeCreateModal()">
+    
+    <form [formGroup]="usuarioForm" (ngSubmit)="onCreate()" class="usuario-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('email')"
+            placeholder="usuario@ejemplo.com"
+          />
+          <div *ngIf="isFieldInvalid('email')" class="error-message">
+            {{ getFieldError('email') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="role">Rol *</label>
+          <select
+            id="role"
+            formControlName="role"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('role')"
+          >
+            <option *ngFor="let role of roles" [value]="role">{{ getRoleText(role) }}</option>
+          </select>
+          <div *ngIf="isFieldInvalid('role')" class="error-message">
+            {{ getFieldError('role') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">📞 Teléfono *</label>
+          <input
+            id="phone"
+            type="tel"
+            formControlName="phone"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('phone')"
+            placeholder="10-15 dígitos"
+          />
+          <div *ngIf="isFieldInvalid('phone')" class="error-message">
+            {{ getFieldError('phone') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password">Contraseña *</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('password')"
+            placeholder="Mínimo 8 caracteres"
+          />
+          <div *ngIf="isFieldInvalid('password')" class="error-message">
+            {{ getFieldError('password') }}
+          </div>
+          <small class="form-help">
+            La contraseña debe tener al menos 8 caracteres.
+          </small>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label for="two_factor_enabled" class="checkbox-label">
+            <input
+              id="two_factor_enabled"
+              type="checkbox"
+              formControlName="two_factor_enabled"
+              class="checkbox-input"
+            />
+            Autenticación de Dos Factores
+          </label>
+          <small class="form-help">
+            Habilita la verificación en dos pasos para este usuario
+          </small>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="isLoading || usuarioForm.invalid"
+        >
+          {{ isLoading ? 'Creando...' : 'Crear Usuario' }}
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="closeCreateModal()"
+          [disabled]="isLoading"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal para editar usuario -->
+  <app-modal 
+    [isOpen]="showEditModal" 
+    [title]="'Editar Usuario'"
+    [showFooter]="false"
+    (closed)="closeEditModal()">
+    
+    <form [formGroup]="usuarioForm" (ngSubmit)="onUpdate()" class="usuario-form" *ngIf="selectedUser">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="edit-email">Email *</label>
+          <input
+            id="edit-email"
+            type="email"
+            formControlName="email"
+            class="form-control"
+            readonly
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-role">Rol *</label>
+          <select
+            id="edit-role"
+            formControlName="role"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('role')"
+          >
+            <option *ngFor="let role of roles" [value]="role">{{ getRoleText(role) }}</option>
+          </select>
+          <div *ngIf="isFieldInvalid('role')" class="error-message">
+            {{ getFieldError('role') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-phone">📞 Teléfono *</label>
+          <input
+            id="edit-phone"
+            type="tel"
+            formControlName="phone"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('phone')"
+            placeholder="10-15 dígitos"
+          />
+          <div *ngIf="isFieldInvalid('phone')" class="error-message">
+            {{ getFieldError('phone') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="edit-password">Contraseña (dejar vacío para no cambiar)</label>
+          <input
+            id="edit-password"
+            type="password"
+            formControlName="password"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('password')"
+            placeholder="Mínimo 8 caracteres"
+          />
+          <div *ngIf="isFieldInvalid('password')" class="error-message">
+            {{ getFieldError('password') }}
+          </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label for="edit-two_factor_enabled" class="checkbox-label">
+            <input
+              id="edit-two_factor_enabled"
+              type="checkbox"
+              formControlName="two_factor_enabled"
+              class="checkbox-input"
+            />
+            Autenticación de Dos Factores
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn btn-primary" 
+          [disabled]="isLoading || usuarioForm.invalid"
+        >
+          {{ isLoading ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          (click)="closeEditModal()"
+          [disabled]="isLoading"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal para eliminar usuario -->
+  <app-modal 
+    [isOpen]="showDeleteModal" 
+    [title]="'Eliminar Usuario'"
+    [showFooter]="true"
+    (closed)="closeDeleteModal()"
+    (confirmed)="onDelete()">
+    
+    <div *ngIf="selectedUser">
+      <p>¿Estás seguro de que quieres eliminar al usuario <strong>"{{ selectedUser.email }}"</strong>?</p>
+      <p class="text-warning">Esta acción no se puede deshacer.</p>
+    </div>
+  </app-modal>
+
+  <!-- Modal para gestión de PINs -->
+  <app-modal 
+    [isOpen]="showPinManagementModal" 
+    [title]="'Gestión de PINs Offline' + (selectedUser ? ' - ' + selectedUser.email : '')"
+    [size]="'large'"
+    [showFooter]="false"
+    (closed)="closePinManagementModal()">
+    
+    <div *ngIf="selectedUser" class="pin-management">
+      <!-- Acciones de PIN -->
+      <div class="pin-actions-section">
+        <h4>Generar Nuevo PIN</h4>
+        <form [formGroup]="pinForm" (ngSubmit)="onPinAction()" class="pin-form">
+          <div class="form-group">
+            <label for="pinAction">Acción:</label>
+            <select id="pinAction" formControlName="pinAction" class="form-control">
+              <option value="generate">Generar Nuevo PIN</option>
+              <option value="regenerate">Regenerar PIN</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            {{ isLoading ? 'Procesando...' : 'Ejecutar' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- PINs Activos -->
+      <div class="active-pins-section">
+        <h4>PINs Activos</h4>
+        <div *ngIf="activePins.length === 0" class="no-pins">
+          📭 No hay PINs activos
+        </div>
+        <div *ngIf="activePins.length > 0" class="pins-list">
+          <div *ngFor="let pin of activePins" class="pin-card" [class.expiring]="isPinExpiring(pin.expires_at)">
+            <div class="pin-info">
+              <p><strong>PIN:</strong> <code>{{ pin.offline_pin }}</code></p>
+              <p><strong>Creado:</strong> {{ formatDate(pin.created_at) }}</p>
+              <p><strong>Expira:</strong> {{ formatDate(pin.expires_at) }}</p>
+              <p *ngIf="isPinExpiring(pin.expires_at)" class="expiry-warning">
+                ⚠️ Expira pronto
+              </p>
+            </div>
+            <div class="pin-actions">
+              <button class="btn btn-danger btn-sm" (click)="onRevokePin(pin.offline_pin)" [disabled]="isLoading">
+                Revocar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Modal para QR Code -->
+  <app-modal 
+    [isOpen]="showQrCodeModal" 
+    [title]="'PIN Offline Generado'"
+    [size]="'medium'"
+    [showFooter]="false"
+    (closed)="closeQrCodeModal()">
+    
+    <div *ngIf="pinResponse" class="qr-modal-content">
+      <div class="pin-info">
+        <p><strong>PIN:</strong> <code class="pin-code">{{ pinResponse.offlinePin }}</code></p>
+        <p><strong>Expira:</strong> {{ formatDate(pinResponse.expiresAt) }}</p>
+      </div>
+      <div class="qr-code" *ngIf="pinResponse.qrCodeUrl">
+        <img [src]="pinResponse.qrCodeUrl" alt="QR Code para acceso offline" class="qr-image">
+        <p class="qr-help">Escanea este código QR para guardar tu acceso offline</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="closeQrCodeModal()">Cerrar</button>
+      </div>
+    </div>
+  </app-modal>
+</div>
