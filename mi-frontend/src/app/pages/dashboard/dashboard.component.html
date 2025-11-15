@@ -1,1 +1,220 @@
-<p>dashboard works!</p>
+<!-- dashboard.component.html -->
+<div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1>Dashboard del Sistema</h1>
+      <p class="welcome-message">Bienvenido al sistema de gestión de inventarios</p>
+      <button class="btn btn-primary btn-refresh" (click)="cargarDashboard()" [disabled]="loading">
+        {{ loading ? 'Actualizando...' : '🔄 Actualizar' }}
+      </button>
+    </div>
+  
+    <!-- Métricas principales -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon total-products">
+          <span>📦</span>
+        </div>
+        <div class="metric-info">
+          <h3>Total Productos</h3>
+          <div class="metric-value">{{ metrics.totalProductos }}</div>
+          <div class="metric-trend neutral">En sistema</div>
+        </div>
+      </div>
+  
+      <div class="metric-card">
+        <div class="metric-icon low-stock">
+          <span>⚠️</span>
+        </div>
+        <div class="metric-info">
+          <h3>Stock Bajo</h3>
+          <div class="metric-value">{{ metrics.productosStockBajo }}</div>
+          <div class="metric-trend negative" *ngIf="metrics.productosStockBajo > 0">
+            Necesita atención
+          </div>
+          <div class="metric-trend positive" *ngIf="metrics.productosStockBajo === 0">
+            Todo en orden
+          </div>
+        </div>
+      </div>
+  
+      <div class="metric-card">
+        <div class="metric-icon total-movements">
+          <span>🔄</span>
+        </div>
+        <div class="metric-info">
+          <h3>Movimientos Hoy</h3>
+          <div class="metric-value">{{ metrics.movimientosHoy }}</div>
+          <div class="metric-trend neutral">Actividad del día</div>
+        </div>
+      </div>
+  
+      <div class="metric-card">
+        <div class="metric-icon total-suppliers">
+          <span>🏢</span>
+        </div>
+        <div class="metric-info">
+          <h3>Proveedores</h3>
+          <div class="metric-value">{{ metrics.totalProveedores }}</div>
+          <div class="metric-trend neutral">Registrados</div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Sección de alertas y actividades recientes -->
+    <div class="dashboard-content">
+      <!-- Alertas urgentes -->
+      <div class="alertas-section">
+        <div class="section-header">
+          <h2>🔔 Alertas Urgentes</h2>
+          <button class="btn btn-sm btn-outline" (click)="verTodasAlertas()">
+            Ver Todas
+          </button>
+        </div>
+        
+        <div *ngIf="loading" class="loading-section">
+          <div class="spinner"></div>
+          <p>Cargando alertas...</p>
+        </div>
+  
+        <div *ngIf="!loading && alertasUrgentes.length === 0" class="no-alerts">
+          <div class="no-alerts-icon">✅</div>
+          <h4>No hay alertas urgentes</h4>
+          <p>Todos los productos tienen stock suficiente</p>
+        </div>
+  
+        <div *ngIf="!loading && alertasUrgentes.length > 0" class="alertas-list">
+          <div *ngFor="let alerta of alertasUrgentes" class="alerta-item" [class]="alerta.nivel">
+            <div class="alerta-icon">
+              <span>{{ getAlertaIcon(alerta.nivel) }}</span>
+            </div>
+            <div class="alerta-content">
+              <h4>{{ alerta.titulo }}</h4>
+              <p>{{ alerta.descripcion }}</p>
+              <span class="alerta-time">{{ alerta.tiempo }}</span>
+            </div>
+            <button class="btn btn-sm btn-primary" (click)="resolverAlerta(alerta)">
+              Resolver
+            </button>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Movimientos recientes -->
+      <div class="movimientos-section">
+        <div class="section-header">
+          <h2>📋 Movimientos Recientes</h2>
+          <button class="btn btn-sm btn-outline" (click)="verTodosMovimientos()">
+            Ver Todos
+          </button>
+        </div>
+  
+        <div *ngIf="loading" class="loading-section">
+          <div class="spinner"></div>
+          <p>Cargando movimientos...</p>
+        </div>
+  
+        <div *ngIf="!loading && movimientosRecientes.length === 0" class="no-data">
+          <p>No hay movimientos recientes</p>
+        </div>
+  
+        <div *ngIf="!loading && movimientosRecientes.length > 0" class="movimientos-list">
+          <div *ngFor="let movimiento of movimientosRecientes" class="movimiento-item">
+            <div class="movimiento-type" [class]="movimiento.tipo">
+              <span class="type-icon">{{ movimiento.tipo === 'Entrada' ? '📥' : '📤' }}</span>
+              <span class="type-text">{{ movimiento.tipo }}</span>
+            </div>
+            <div class="movimiento-info">
+              <strong>{{ movimiento.producto }}</strong>
+              <span>Cantidad: {{ movimiento.cantidad }}</span>
+            </div>
+            <div class="movimiento-time">
+              {{ movimiento.fecha }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Gráficos y estadísticas -->
+    <div class="charts-section">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>📊 Movimientos por Día (Última Semana)</h3>
+        </div>
+        <div *ngIf="loading" class="chart-loading">
+          <div class="spinner"></div>
+          <p>Cargando gráfico...</p>
+        </div>
+        <div *ngIf="!loading" class="chart-placeholder">
+          <div class="chart-bars">
+            <div *ngFor="let day of movimientosPorDia" class="chart-bar">
+              <div class="bar-container">
+                <div class="bar-fill entrada" [style.height]="getBarHeight(day.entradas) + 'px'"></div>
+                <div class="bar-fill salida" [style.height]="getBarHeight(day.salidas) + 'px'"></div>
+              </div>
+              <div class="bar-label">{{ day.dia }}</div>
+              <div class="bar-value">{{ day.entradas + day.salidas }}</div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-color entrada"></div>
+              <span>Entradas ({{ getTotalEntradas() }})</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color salida"></div>
+              <span>Salidas ({{ getTotalSalidas() }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🏷️ Top Categorías de Productos</h3>
+        </div>
+        <div *ngIf="loading" class="chart-loading">
+          <div class="spinner"></div>
+          <p>Cargando categorías...</p>
+        </div>
+        <div *ngIf="!loading" class="chart-placeholder">
+          <div class="categories-list">
+            <div *ngFor="let categoria of productosPorCategoria" class="category-item">
+              <div class="category-name">{{ categoria.nombre }}</div>
+              <div class="category-bar">
+                <div class="category-fill" [style.width]="categoria.porcentaje + '%'"></div>
+              </div>
+              <div class="category-count">{{ categoria.cantidad }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Acciones rápidas -->
+    <div class="quick-actions">
+      <h2>🚀 Acciones Rápidas</h2>
+      <div class="actions-grid">
+        <button class="action-btn" (click)="registrarMovimiento()">
+          <span class="action-icon">📥</span>
+          <span class="action-text">Registrar Entrada</span>
+        </button>
+        
+        <button class="action-btn" (click)="registrarSalida()">
+          <span class="action-icon">📤</span>
+          <span class="action-text">Registrar Salida</span>
+        </button>
+        
+        <button class="action-btn" (click)="gestionarProductos()">
+          <span class="action-icon">📦</span>
+          <span class="action-text">Gestionar Productos</span>
+        </button>
+        
+        <button class="action-btn" (click)="gestionarProveedores()">
+          <span class="action-icon">🏢</span>
+          <span class="action-text">Gestionar Proveedores</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
