@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
-    "build": "ng build --configuration production",
+    "build": "tsc",
     "start": "node dist/index.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch"
