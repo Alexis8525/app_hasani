@@ -12,8 +12,9 @@ import movimientoRoutes from './routes/movimientos-routes';
 import bitacoraRoutes from './routes/bitacora-routes';
 // Swagger
 import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
+import fs from 'fs';
 import path from 'path';
+import YAML from 'yamljs';
 import { GlobalValidationMiddleware } from './middleware/globalValidation.middleware';
 import './jobs/stock-alert-job';
 
@@ -88,12 +89,19 @@ class Server {
   }
 
   swaggerDocs(): void {
-    const swaggerPath = path.join(__dirname, './docs/swagger.yaml');
-    const swaggerDocument = YAML.load(swaggerPath);
+    try {
+      // runtime path to the built swagger file (works when running node dist/index.js)
+      const swaggerPath = path.join(process.cwd(), 'dist', 'docs', 'swagger.yaml');
 
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-    console.log(`📖 Swagger docs en http://localhost:${this.app.get('port')}/api-docs`);
+      if (fs.existsSync(swaggerPath)) {
+        const swaggerSpec = YAML.load(swaggerPath);
+        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+      } else {
+        console.warn(`Swagger YAML not found at ${swaggerPath}. Skipping swagger UI.`);
+      }
+    } catch (err) {
+      console.warn('Failed to load swagger YAML, continuing without API docs:', err);
+    }
   }
 
   async start(): Promise<void> {
