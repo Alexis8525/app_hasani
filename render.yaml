@@ -2,9 +2,8 @@ services:
   - type: web
     name: back-hasani
     env: node
-    rootDir: mi-backend
-    buildCommand: npm install
-    startCommand: npm run start
+    buildCommand: cd mi-backend && npm install
+    startCommand: cd mi-backend && npm run start
     envVars:
       - key: DATABASE_URL
         value: postgresql://app_b14j_user:cD8nYBBCGtUTBGM9jyvX6iYCsx4JLp5n@dpg-d4dob2re5dus73b5g4e0-a.oregon-postgres.render.com/app_b14j
@@ -12,10 +11,9 @@ services:
         value: https://app-hasani-11ms.onrender.com
 
   - type: static
-    name: app_hsani
-    rootDir: mi-frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist/mi-frontend
+    name: app-hasani
+    buildCommand: cd mi-frontend && npm install && npm run build
+    staticPublishPath: mi-frontend/dist/mi-frontend
     envVars:
       - key: API_URL
         value: https://back-hasani.onrender.com/api
