@@ -13,8 +13,8 @@ import { ModalComponent } from '../../layout/modal/modal.component';
   styleUrls: ['./clientes.component.css']
 })
 export class ClientesComponent implements OnInit {
-  private clientesService = inject(ClientesService);
-  private fb = inject(FormBuilder);
+  private readonly clientesService = inject(ClientesService);
+  private readonly fb = inject(FormBuilder);
 
   // Listas y estados
   clientes: any[] = [];
@@ -141,8 +141,8 @@ export class ClientesComponent implements OnInit {
     this.selectedCliente = cliente;
     this.clienteForm.patchValue({
       nombre: cliente.nombre,
-      telefono: cliente.telefono || '',
-      contacto: cliente.contacto || ''
+      telefono: cliente['telefono'] || '',
+      contacto: cliente['contacto'] || ''
     });
     this.showEditModal = true;
   }

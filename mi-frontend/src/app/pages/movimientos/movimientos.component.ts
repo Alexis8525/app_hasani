@@ -14,12 +14,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrls: ['./movimientos.component.css']
 })
 export class MovimientosComponent implements OnInit {
-  private movimientosService = inject(MovimientosService);
-  private fb = inject(FormBuilder);
+  private readonly movimientosService = inject(MovimientosService);
+  private readonly fb = inject(FormBuilder);
 
   // Listas y estados
   // relaxed types to avoid strict template errors; replace with real interfaces later
   movimientos: any[] = [];
+  filteredMovimientos: any[] = []; // PROPRIEDAD FALTANTE AGREGADA
   alertas: any[] = [];
   productosStockBajo: ProductoStockBajo[] = [];
   
@@ -315,7 +316,7 @@ export class MovimientosComponent implements OnInit {
   }
 
   getAlertLevelClass(alerta: ProductoStockBajo): string {
-    switch (alerta.nivel_alerta) {
+    switch (alerta['nivel_alerta']) {
       case 'CRÍTICO': return 'critico';
       case 'ALTO': return 'alto';
       case 'MEDIO': return 'medio';
