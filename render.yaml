@@ -2,8 +2,23 @@ services:
   - type: web
     name: back-hasani
     env: node
-    buildCommand: cd mi-backend && npm install
-    startCommand: cd mi-backend && npm run start
+    buildCommand: >-
+      cd mi-backend &&
+      npm install &&
+      npm run build &&
+      mkdir -p dist/docs &&
+      if [ -f src/docs/swagger.yaml ]; then
+        cp src/docs/swagger.yaml dist/docs/swagger.yaml;
+      else
+        printf "openapi: '3.0.0'\ninfo:\n  title: 'API'\n  version: '1.0.0'\npaths: {}\n" > dist/docs/swagger.yaml;
+      fi
+    startCommand: >-
+      cd mi-backend &&
+      mkdir -p dist/docs &&
+      if [ -f src/docs/swagger.yaml ]; then
+        cp -n src/docs/swagger.yaml dist/docs/swagger.yaml || true;
+      fi &&
+      npm run start
     envVars:
       - key: DATABASE_URL
         value: postgresql://app_b14j_user:cD8nYBBCGtUTBGM9jyvX6iYCsx4JLp5n@dpg-d4dob2re5dus73b5g4e0-a.oregon-postgres.render.com/app_b14j
