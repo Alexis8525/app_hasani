@@ -1,7 +1,7 @@
-// services/usuarios.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Usuario {
   id: number;
@@ -14,21 +14,12 @@ export interface Usuario {
   offline_pin_secret?: string;
 }
 
-export interface Cliente {
-  id_cliente: number;
-  id_user: number;
-  nombre: string;
-  telefono?: string;
-  contacto?: string;
-}
-
 export interface OfflinePin {
   offline_pin: string;
   created_at: Date;
   expires_at: Date;
 }
 
-// Corregir: hacer las propiedades opcionales
 export interface PinResponse {
   offlinePin?: string;
   qrCodeUrl?: string;
@@ -52,7 +43,7 @@ export interface ApiResponse<T> {
 })
 export class UsuariosService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/users';
+  private apiUrl = `${environment.apiUrl}/users`;
 
   getAll(): Observable<Usuario[] | ApiResponse<Usuario[]>> {
     return this.http.get<Usuario[] | ApiResponse<Usuario[]>>(this.apiUrl);

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Producto {
   id_producto: number;
@@ -46,44 +47,36 @@ export interface SearchCriteria {
 })
 export class ProductosService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/productos';
+  private apiUrl = `${environment.apiUrl}/productos`;
 
-  // Obtener todos los productos
   getAll(): Observable<ApiResponse<Producto[]>> {
     return this.http.get<ApiResponse<Producto[]>>(this.apiUrl);
   }
 
-  // Buscar producto por nombre (mantener para compatibilidad)
   getByNombre(nombre: string): Observable<ApiResponse<Producto[]>> {
     return this.http.post<ApiResponse<Producto[]>>(`${this.apiUrl}/buscar`, { nombre });
   }
 
-  // Nueva búsqueda avanzada
   searchAdvanced(criteria: SearchCriteria): Observable<ApiResponse<Producto[]>> {
     return this.http.post<ApiResponse<Producto[]>>(`${this.apiUrl}/buscar-avanzado`, criteria);
   }
 
-  // Crear nuevo producto
   create(producto: Omit<Producto, 'id_producto' | 'created_at' | 'updated_at' | 'nombre_proveedor'>): Observable<ApiResponse<Producto>> {
     return this.http.post<ApiResponse<Producto>>(this.apiUrl, producto);
   }
 
-  // Actualizar producto
   update(nombre: string, producto: Partial<Omit<Producto, 'id_producto' | 'created_at' | 'updated_at' | 'nombre_proveedor'>>): Observable<ApiResponse<Producto>> {
     return this.http.put<ApiResponse<Producto>>(this.apiUrl, { nombre, ...producto });
   }
 
-  // Eliminar producto
   delete(nombre: string): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(this.apiUrl, { body: { nombre } });
   }
 
-  // Obtener productos con stock bajo
   getLowStock(): Observable<ApiResponse<Producto[]>> {
     return this.http.get<ApiResponse<Producto[]>>(`${this.apiUrl}/inventory/low-stock`);
   }
 
-  // Verificar alertas de stock
   checkStockAlerts(): Observable<ApiResponse<StockAlerta[]>> {
     return this.http.get<ApiResponse<StockAlerta[]>>(`${this.apiUrl}/alertas-stock`);
   }

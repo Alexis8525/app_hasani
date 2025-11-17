@@ -1,5 +1,5 @@
 export const environment = {   
     production: true,
-    apiUrl: 'http://tu-servidor.com/api',
+    apiUrl: 'https://back-hasani.onrender.com/api',
     appName: 'Sistema de Inventarios'
 };

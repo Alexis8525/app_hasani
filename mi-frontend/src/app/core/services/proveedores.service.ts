@@ -1,7 +1,7 @@
-// services/proveedores.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Proveedor {
   id_proveedor: number;
@@ -21,29 +21,24 @@ export interface ApiResponse<T> {
 })
 export class ProveedoresService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api/proveedores';
+  private apiUrl = `${environment.apiUrl}/proveedores`;
 
-  // Obtener todos los proveedores
   getAll(): Observable<ApiResponse<Proveedor[]>> {
     return this.http.get<ApiResponse<Proveedor[]>>(this.apiUrl);
   }
 
-  // Buscar proveedor por nombre
   getByNombre(nombre: string): Observable<ApiResponse<Proveedor[]>> {
     return this.http.post<ApiResponse<Proveedor[]>>(`${this.apiUrl}/buscar`, { nombre });
   }
 
-  // Crear nuevo proveedor
   create(proveedor: Omit<Proveedor, 'id_proveedor'>): Observable<ApiResponse<Proveedor>> {
     return this.http.post<ApiResponse<Proveedor>>(this.apiUrl, proveedor);
   }
 
-  // Actualizar proveedor
   update(nombre: string, proveedor: Partial<Omit<Proveedor, 'id_proveedor'>>): Observable<ApiResponse<Proveedor>> {
     return this.http.put<ApiResponse<Proveedor>>(this.apiUrl, { nombre, ...proveedor });
   }
 
-  // Eliminar proveedor
   delete(nombre: string): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(this.apiUrl, { body: { nombre } });
   }
