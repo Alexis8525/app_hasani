@@ -121,21 +121,39 @@ class Server {
 }
 
 // --- New startup helpers ---
-function applyDatabaseUrlEnv() {
-	// If DATABASE_URL is provided, parse and export PG* env vars for libraries that use them
-	const dbUrl = process.env.DATABASE_URL;
-	if (!dbUrl) return;
-	try {
-		const u = new URL(dbUrl);
-		if (u.username) process.env.PGUSER = decodeURIComponent(u.username);
-		if (u.password) process.env.PGPASSWORD = decodeURIComponent(u.password);
-		if (u.hostname) process.env.PGHOST = u.hostname;
-		if (u.port) process.env.PGPORT = u.port;
-		const dbName = u.pathname ? u.pathname.replace(/^\//, '') : '';
-		if (dbName) process.env.PGDATABASE = dbName;
-	} catch (err) {
-		console.warn('Unable to parse DATABASE_URL, continuing with existing env vars.', err);
+function applyDatabaseEnvFromRender() {
+	// 1) If a connection string exists, parse it first
+	const dbUrl = process.env.DATABASE_URL || process.env.DB_URL || process.env.DB_URL;
+	if (dbUrl) {
+		try {
+			const u = new URL(dbUrl);
+			if (u.username) process.env.PGUSER = decodeURIComponent(u.username);
+			if (u.password) process.env.PGPASSWORD = decodeURIComponent(u.password);
+			if (u.hostname) process.env.PGHOST = u.hostname;
+			if (u.port) process.env.PGPORT = u.port;
+			const dbName = u.pathname ? u.pathname.replace(/^\//, '') : '';
+			if (dbName) process.env.PGDATABASE = dbName;
+		} catch (err) {
+			console.warn('Unable to parse DATABASE_URL/DB_URL, continuing with other env vars.', err);
+		}
 	}
+
+	// 2) Override/complete from explicit DB_* variables (Render provides these in your screenshot)
+	if (process.env.DB_HOST) process.env.PGHOST = process.env.DB_HOST;
+	if (process.env.DB_PORT) process.env.PGPORT = process.env.DB_PORT;
+	if (process.env.DB_USER) process.env.PGUSER = process.env.DB_USER;
+	if (process.env.DB_PASSWORD) process.env.PGPASSWORD = process.env.DB_PASSWORD;
+	if (process.env.DB_NAME) process.env.PGDATABASE = process.env.DB_NAME;
+
+	// 3) Small confirmation log (avoid printing passwords)
+	console.info('Database env resolved:',
+		{
+			PGHOST: process.env.PGHOST,
+			PGPORT: process.env.PGPORT,
+			PGUSER: process.env.PGUSER,
+			PGDATABASE: process.env.PGDATABASE
+		}
+	);
 }
 
 function ensureSmtpFlag() {
@@ -147,8 +165,8 @@ function ensureSmtpFlag() {
 	}
 }
 
-// Apply helpers before constructing Server (so dependent modules see env changes)
-applyDatabaseUrlEnv();
+// Apply DB env mapping before server initialization
+applyDatabaseEnvFromRender();
 ensureSmtpFlag();
 
 // Safe startup: captura errores de inicialización para que el proceso no termine si hay fallos no críticos
