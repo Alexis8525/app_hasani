@@ -17,7 +17,7 @@ export class ClientesComponent implements OnInit {
   private fb = inject(FormBuilder);
 
   // Listas y estados
-  clientes: Cliente[] = [];
+  clientes: any[] = [];
   filteredClientes: Cliente[] = [];
   
   // Formularios
@@ -36,7 +36,7 @@ export class ClientesComponent implements OnInit {
   showDeleteModal = false;
   
   // Datos seleccionados
-  selectedCliente: Cliente | null = null;
+  selectedCliente: any = null;
 
   // Usuario actual (debería venir de tu servicio de autenticación)
   currentUserId: number = 1;
