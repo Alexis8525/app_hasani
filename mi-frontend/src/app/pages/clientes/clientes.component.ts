@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ClientesService, Cliente } from '../../core/services/clientes.service';
+import { ClientesService } from '../../core/services/clientes.service';
 import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
@@ -280,4 +280,12 @@ export class ClientesComponent implements OnInit {
     }
     return '';
   }
+}
+
+// Tipo local mínimo para compilar; reemplaza con la definición real si la exportas desde el servicio.
+interface Cliente {
+  id?: number;
+  nombre?: string;
+  email?: string;
+  [k: string]: any;
 }

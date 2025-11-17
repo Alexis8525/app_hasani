@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MovimientosService, Movimiento, ProductoStockBajo } from '../../core/services/movimentos.service';
+import { MovimientosService } from '../../core/services/movimentos.service';
 import { ModalComponent } from '../../layout/modal/modal.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -330,4 +330,21 @@ export class MovimientosComponent implements OnInit {
       default: return 'ℹ️';
     }
   }
+}
+
+// Tipos locales mínimos para compilar; preferible exportarlos desde movimientos.service.
+interface Movimiento {
+  id?: number;
+  tipo?: string;
+  fecha?: string;
+  monto?: number;
+  [k: string]: any;
+}
+
+interface ProductoStockBajo {
+  id_producto?: number;
+  nombre?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  [k: string]: any;
 }

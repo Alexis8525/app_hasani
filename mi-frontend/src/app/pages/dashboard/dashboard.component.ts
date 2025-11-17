@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MovimientosService, ProductoStockBajo } from '../../core/services/movimentos.service';
+import { MovimientosService } from '../../core/services/movimentos.service';
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
 
@@ -42,6 +42,15 @@ interface ProductoCategoria {
   nombre: string;
   cantidad: number;
   porcentaje: number;
+}
+
+// Tipo local mínimo
+interface ProductoStockBajo {
+  id_producto?: number;
+  nombre?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  [k: string]: any;
 }
 
 @Component({
@@ -116,8 +125,8 @@ export class DashboardComponent implements OnInit {
       const movimientosResponse = await this.movimientosService.getAll().toPromise();
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         const hoy = new Date().toDateString();
-        this.metrics.movimientosHoy = movimientosResponse.data.filter(mov => 
-          new Date(mov.fecha).toDateString() === hoy
+        this.metrics.movimientosHoy = movimientosResponse.data.filter((mov: any) =>
+          new Date((mov as any).fecha).toDateString() === hoy
         ).length;
       }
 
@@ -159,10 +168,10 @@ export class DashboardComponent implements OnInit {
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         // Ordenar por fecha más reciente y tomar los últimos 5
         const movimientosOrdenados = movimientosResponse.data
-          .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+          .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
           .slice(0, 5);
 
-        this.movimientosRecientes = movimientosOrdenados.map(mov => ({
+        this.movimientosRecientes = movimientosOrdenados.map((mov: any) => ({
           id: mov.id_movimiento,
           producto: mov.producto_nombre || 'Producto sin nombre',
           tipo: mov.tipo,

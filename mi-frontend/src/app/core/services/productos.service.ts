@@ -47,7 +47,13 @@ export interface SearchCriteria {
 })
 export class ProductosService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/productos`;
+  // Use environment.apiUrl, or runtime-provided API_URL (window.__env.API_URL), or fallback to '/api'
+  private apiUrl = (() => {
+    const envUrl = environment?.apiUrl;
+    const runtimeUrl = typeof window !== 'undefined' ? (window as any).__env?.API_URL || (window as any).API_URL : undefined;
+    const base = envUrl || runtimeUrl || '/api';
+    return `${base.replace(/\/$/, '')}/productos`;
+  })();
 
   getAll(): Observable<ApiResponse<Producto[]>> {
     return this.http.get<ApiResponse<Producto[]>>(this.apiUrl);
