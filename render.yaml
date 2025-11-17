@@ -13,7 +13,7 @@ services:
   - type: static
     name: app-hasani
     buildCommand: cd mi-frontend && npm install && npm run build
-    staticPublishPath: mi-frontend/dist/mi-frontend
+    staticPublishPath: mi-frontend/dist/mi-frontend/browser
     envVars:
       - key: API_URL
         value: https://back-hasani.onrender.com/api

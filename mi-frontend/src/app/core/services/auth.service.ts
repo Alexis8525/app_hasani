@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
   message: string;
@@ -58,10 +59,19 @@ export interface ActiveSession {
 export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
-  private apiUrl = 'http://localhost:3000/api/auth';
   private router = inject(Router);
 
-  login(email: string, password: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<LoginResponse> {
+  // 🔥 YA NO USA localhost
+  private apiUrl = `${environment.apiUrl}/auth`;
+
+  login(
+    email: string,
+    password: string,
+    deviceInfo?: string,
+    ipAddress?: string,
+    lat?: number,
+    lng?: number
+  ): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
       email,
       password,
@@ -72,8 +82,14 @@ export class AuthService {
     });
   }
 
-  // Nuevo método para forzar login destruyendo sesiones anteriores
-  forceLogin(email: string, password: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<LoginResponse> {
+  forceLogin(
+    email: string,
+    password: string,
+    deviceInfo?: string,
+    ipAddress?: string,
+    lat?: number,
+    lng?: number
+  ): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/force-login`, {
       email,
       password,
@@ -84,7 +100,14 @@ export class AuthService {
     });
   }
 
-  verify2FA(tempToken: string, otp: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<Verify2FAResponse> {
+  verify2FA(
+    tempToken: string,
+    otp: string,
+    deviceInfo?: string,
+    ipAddress?: string,
+    lat?: number,
+    lng?: number
+  ): Observable<Verify2FAResponse> {
     return this.http.post<Verify2FAResponse>(`${this.apiUrl}/2fa/verify`, {
       tempToken,
       otp,
@@ -95,7 +118,14 @@ export class AuthService {
     });
   }
 
-  verifyOffline(email: string, offlinePin: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<Verify2FAResponse> {
+  verifyOffline(
+    email: string,
+    offlinePin: string,
+    deviceInfo?: string,
+    ipAddress?: string,
+    lat?: number,
+    lng?: number
+  ): Observable<Verify2FAResponse> {
     return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-offline`, {
       email,
       offlinePin,
@@ -126,10 +156,9 @@ export class AuthService {
     return null;
   }
 
-  // Logout mejorado que elimina la sesión del backend
   logout(): Observable<any> {
     const token = this.getToken();
-    
+
     return this.http.post(`${this.apiUrl}/logout`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -150,28 +179,23 @@ export class AuthService {
     }
   }
 
-  // Método para logout forzado (sin llamar al backend)
   forceLogout(): void {
     this.clearAuthData();
     this.router.navigate(['/login']);
   }
 
-  // Obtener sesiones activas
   getActiveSessions(): Observable<{ sessions: ActiveSession[], total: number }> {
     return this.http.get<{ sessions: ActiveSession[], total: number }>(`${this.apiUrl}/sessions`);
   }
 
-  // Cerrar otras sesiones
   logoutOtherSessions(): Observable<any> {
     return this.http.post(`${this.apiUrl}/sessions/logout-others`, {});
   }
 
-  // Cerrar sesión específica
   logoutSession(sessionId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`);
   }
 
-  // Verificar si el usuario está autenticado
   isAuthenticated(): boolean {
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('auth_token');
@@ -181,7 +205,6 @@ export class AuthService {
     return false;
   }
 
-  // Verificar si el token está expirado
   private isTokenExpired(): boolean {
     const token = this.getToken();
     if (!token) return true;
@@ -194,7 +217,6 @@ export class AuthService {
     }
   }
 
-  // Obtener token
   getToken(): string | null {
     if (isPlatformBrowser(this.platformId)) {
       return localStorage.getItem('auth_token');
@@ -209,12 +231,10 @@ export class AuthService {
     return false;
   }
 
-  // Obtener datos del usuario actual
   getCurrentUser() {
     return this.loadUserFromStorage();
   }
 
-  // Obtener rol del usuario actual
   getCurrentUserRole(): string | null {
     const user = this.loadUserFromStorage();
     return user ? user.role : null;

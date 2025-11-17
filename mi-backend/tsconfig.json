@@ -8,7 +8,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
-  "include": ["src", "test/**/*"]
+  "include": ["src"]
 }
