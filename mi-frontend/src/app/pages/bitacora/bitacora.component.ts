@@ -34,6 +34,9 @@ export class BitacoraComponent implements OnInit {
   showCreateModal = false;
   showSearchModal = false;
 
+  // relaxed typing to avoid template index-signature errors; replace with proper type later
+  registros: any[] = [];
+
   constructor() {
     // Formulario para crear registros en bitácora
     this.bitacoraForm = this.fb.group({

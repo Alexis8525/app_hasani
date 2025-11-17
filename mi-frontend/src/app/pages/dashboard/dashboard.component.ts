@@ -83,6 +83,9 @@ export class DashboardComponent implements OnInit {
   
   loading = true;
 
+  // relaxed typing for product alerts; replace with ProductoStockBajo interface later
+  productosStockBajo: any[] = [];
+
   ngOnInit() {
     this.cargarDashboard();
   }
@@ -167,9 +170,7 @@ export class DashboardComponent implements OnInit {
       
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         // Ordenar por fecha más reciente y tomar los últimos 5
-        const movimientosOrdenados = movimientosResponse.data
-          .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-          .slice(0, 5);
+        const movimientosOrdenados = (movimientosResponse.data as any[]).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 5);
 
         this.movimientosRecientes = movimientosOrdenados.map((mov: any) => ({
           id: mov.id_movimiento,
