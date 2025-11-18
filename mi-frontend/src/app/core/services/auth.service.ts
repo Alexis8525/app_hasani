@@ -1,9 +1,9 @@
+// auth.service.ts - VERSION CORREGIDA
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
-import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
   message: string;
@@ -61,8 +61,8 @@ export class AuthService {
   private platformId = inject(PLATFORM_ID);
   private router = inject(Router);
 
-  // 🔥 YA NO USA localhost
-  private apiUrl = `${environment.apiUrl}/auth`;
+  // 🔥🔥🔥 SOLUCIÓN DEFINITIVA - URL FIJA DE PRODUCCIÓN
+  private apiUrl = 'https://back-hasani.onrender.com/api/auth';
 
   login(
     email: string,
@@ -72,6 +72,9 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<LoginResponse> {
+    console.log('🚀 URL REAL del backend:', this.apiUrl);
+    console.log('📧 Email del login:', email);
+    
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
       email,
       password,
@@ -90,6 +93,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<LoginResponse> {
+    console.log('🚀 Force login - URL:', this.apiUrl);
+    
     return this.http.post<LoginResponse>(`${this.apiUrl}/force-login`, {
       email,
       password,
@@ -108,6 +113,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<Verify2FAResponse> {
+    console.log('🚀 2FA verification - URL:', this.apiUrl);
+    
     return this.http.post<Verify2FAResponse>(`${this.apiUrl}/2fa/verify`, {
       tempToken,
       otp,
@@ -126,6 +133,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<Verify2FAResponse> {
+    console.log('🚀 Offline verification - URL:', this.apiUrl);
+    
     return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-offline`, {
       email,
       offlinePin,
@@ -139,12 +148,14 @@ export class AuthService {
   saveUserToStorage(user: any): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('user', JSON.stringify(user));
+      console.log('✅ Usuario guardado en localStorage');
     }
   }
 
   saveToken(token: string): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('auth_token', token);
+      console.log('✅ Token guardado en localStorage');
     }
   }
 
@@ -176,6 +187,7 @@ export class AuthService {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       localStorage.removeItem('user_data');
+      console.log('✅ Datos de autenticación limpiados');
     }
   }
 
@@ -200,7 +212,9 @@ export class AuthService {
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('auth_token');
       const user = localStorage.getItem('user');
-      return !!(token && user && !this.isTokenExpired());
+      const isAuth = !!(token && user && !this.isTokenExpired());
+      console.log('🔐 Estado autenticación:', isAuth);
+      return isAuth;
     }
     return false;
   }
@@ -211,8 +225,13 @@ export class AuthService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return Date.now() >= payload.exp * 1000;
+      const isExpired = Date.now() >= payload.exp * 1000;
+      if (isExpired) {
+        console.log('⚠️ Token expirado');
+      }
+      return isExpired;
     } catch {
+      console.log('⚠️ Error verificando token');
       return true;
     }
   }
@@ -226,7 +245,9 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     if (isPlatformBrowser(this.platformId)) {
-      return !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
+      const isLogged = !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
+      console.log('🔐 Usuario logueado:', isLogged);
+      return isLogged;
     }
     return false;
   }
@@ -238,5 +259,11 @@ export class AuthService {
   getCurrentUserRole(): string | null {
     const user = this.loadUserFromStorage();
     return user ? user.role : null;
+  }
+
+  // 🔥 MÉTODO PARA PROBAR LA CONEXIÓN AL BACKEND
+  testBackendConnection(): Observable<any> {
+    console.log('🔍 Probando conexión con:', this.apiUrl);
+    return this.http.get('https://back-hasani.onrender.com/health');
   }
 }
