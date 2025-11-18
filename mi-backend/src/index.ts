@@ -1,5 +1,5 @@
 // src/index.ts
-import express, { Application } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import { connectDB } from './config/db';
@@ -27,29 +27,53 @@ class Server {
     this.config();
     this.routes();
     this.swaggerDocs();
+    this.handleErrors(); // 🔥 IMPORTANTE: Mover esto al final
   }
 
   config(): void {
     this.app.set('port', process.env.PORT || 3000);
 
-    this.app.use(
-      express.json({
-        limit: '50mb',
-        verify: (req: any, res, buf) => {
-          req.rawBody = buf.toString(); // 🔑 útil si manejas firmas digitales o webhooks
-        },
-      })
-    );
-    this.app.use(express.urlencoded({ limit: '50mb', extended: true }));
-    this.app.use(morgan('dev'));
+    // ✅ CORS CORREGIDO - Configuración mejorada
+    const allowedOrigins = [
+      'https://app-hasani-11ms.onrender.com',
+      'http://localhost:4200',
+      'http://localhost:3000',
+      process.env.CLIENT_URL
+    ].filter(Boolean);
+
+    console.log('🌐 Origins permitidos en CORS:', allowedOrigins);
 
     this.app.use(
       cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:4200',
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        origin: function (origin, callback) {
+          // Permitir requests sin origin (como mobile apps, Postman, curl)
+          if (!origin) return callback(null, true);
+          
+          if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+            console.warn('🚫 CORS bloqueado para:', origin);
+            return callback(new Error(msg), false);
+          }
+          console.log('✅ CORS permitido para:', origin);
+          return callback(null, true);
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
       })
     );
+
+    // Middlewares de parsing
+    this.app.use(express.json({
+      limit: '50mb',
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf.toString();
+      },
+    }));
+    this.app.use(express.urlencoded({ limit: '50mb', extended: true }));
+    
+    // Logging
+    this.app.use(morgan('combined'));
 
     // Middlewares globales de validación
     this.app.use(GlobalValidationMiddleware.validateContentType);
@@ -58,7 +82,37 @@ class Server {
   }
 
   routes(): void {
-    this.app.get('/', (req, res) => res.send('¡Hola, mundo!'));
+    // Health check mejorado
+    this.app.get('/health', (req: Request, res: Response) => {
+      res.status(200).json({
+        status: 'OK',
+        message: 'Backend de Sistema de Inventarios funcionando correctamente',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        version: '1.0.0'
+      });
+    });
+
+    // Root endpoint
+    this.app.get('/', (req: Request, res: Response) => {
+      res.json({
+        message: '¡Backend de Sistema de Inventarios Hasani funcionando! 🚀',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        endpoints: {
+          docs: '/api-docs',
+          health: '/health',
+          auth: '/api/auth',
+          users: '/api/users',
+          clientes: '/api/clientes',
+          productos: '/api/productos',
+          movimientos: '/api/movimientos'
+        }
+      });
+    });
+
+    // API routes
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/clientes', clienteRoutes);
@@ -66,19 +120,42 @@ class Server {
     this.app.use('/api/productos', productoRoutes);
     this.app.use('/api/movimientos', movimientoRoutes);
     this.app.use('/api/bitacora', bitacoraRoutes);
+
+    // Test endpoint para auth
+    this.app.get('/api/auth/test', (req: Request, res: Response) => {
+      res.json({
+        message: '✅ Endpoint de auth funcionando correctamente',
+        timestamp: new Date().toISOString()
+      });
+    });
   }
 
   handleErrors(): void {
-    this.app.use('*', (req, res) => {
+    // Manejo de rutas no encontradas
+    this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({
         code: 1,
         message: `Ruta no encontrada: ${req.method} ${req.originalUrl}`,
+        suggested: {
+          docs: '/api-docs',
+          health: '/health'
+        }
       });
     });
 
+    // Manejo global de errores
     this.app.use(
-      (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-        console.error('Error global no manejado:', err);
+      (err: any, req: Request, res: Response, next: NextFunction) => {
+        console.error('❌ Error global no manejado:', err);
+
+        // Si es error de CORS
+        if (err.message.includes('CORS')) {
+          return res.status(403).json({
+            code: 1,
+            message: 'Acceso CORS denegado',
+            details: err.message
+          });
+        }
 
         res.status(err.status || 500).json({
           code: 1,
@@ -91,17 +168,17 @@ class Server {
 
   swaggerDocs(): void {
     try {
-      // runtime path to the built swagger file (works when running node dist/index.js)
       const swaggerPath = path.join(process.cwd(), 'dist', 'docs', 'swagger.yaml');
 
       if (fs.existsSync(swaggerPath)) {
         const swaggerSpec = YAML.load(swaggerPath);
         this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+        console.log('📚 Swagger UI disponible en /api-docs');
       } else {
-        console.warn(`Swagger YAML not found at ${swaggerPath}. Skipping swagger UI.`);
+        console.warn(`⚠️ Swagger YAML no encontrado en ${swaggerPath}. Saltando Swagger UI.`);
       }
     } catch (err) {
-      console.warn('Failed to load swagger YAML, continuing without API docs:', err);
+      console.warn('⚠️ Error al cargar Swagger YAML, continuando sin docs:', err);
     }
   }
 
@@ -110,85 +187,144 @@ class Server {
       await connectDB();
       console.log('✅ Conexión a la base de datos establecida con éxito');
 
-      this.app.listen(this.app.get('port'), () => {
+      const server = this.app.listen(this.app.get('port'), () => {
         console.log(`🚀 Servidor corriendo en el puerto ${this.app.get('port')}`);
+        console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`📊 Health check: http://localhost:${this.app.get('port')}/health`);
+        console.log(`📚 API Docs: http://localhost:${this.app.get('port')}/api-docs`);
       });
+
+      // Manejo graceful de shutdown
+      process.on('SIGTERM', () => {
+        console.log('🛑 SIGTERM recibido, cerrando servidor gracefully...');
+        server.close(() => {
+          console.log('✅ Servidor cerrado');
+          process.exit(0);
+        });
+      });
+
     } catch (error: any) {
-      console.error('❌ Error al iniciar el servidor:', error.message);
+      console.error('❌ Error crítico al iniciar el servidor:', error.message);
       process.exit(1);
     }
   }
 }
 
-// --- New startup helpers ---
+// --- Helper functions for environment setup ---
 function applyDatabaseEnvFromRender() {
-	// 1) If a connection string exists, parse it first
-	const dbUrl = process.env.DATABASE_URL || process.env.DB_URL || process.env.DB_URL;
-	if (dbUrl) {
-		try {
-			const u = new URL(dbUrl);
-			if (u.username) process.env.PGUSER = decodeURIComponent(u.username);
-			if (u.password) process.env.PGPASSWORD = decodeURIComponent(u.password);
-			if (u.hostname) process.env.PGHOST = u.hostname;
-			if (u.port) process.env.PGPORT = u.port;
-			const dbName = u.pathname ? u.pathname.replace(/^\//, '') : '';
-			if (dbName) process.env.PGDATABASE = dbName;
-		} catch (err) {
-			console.warn('Unable to parse DATABASE_URL/DB_URL, continuing with other env vars.', err);
-		}
-	}
+  // 1) If a connection string exists, parse it first
+  const dbUrl = process.env.DATABASE_URL || process.env.DB_URL;
+  if (dbUrl) {
+    try {
+      const u = new URL(dbUrl);
+      if (u.username) process.env.PGUSER = decodeURIComponent(u.username);
+      if (u.password) process.env.PGPASSWORD = decodeURIComponent(u.password);
+      if (u.hostname) process.env.PGHOST = u.hostname;
+      if (u.port) process.env.PGPORT = u.port;
+      const dbName = u.pathname ? u.pathname.replace(/^\//, '') : '';
+      if (dbName) process.env.PGDATABASE = dbName;
+      console.log('✅ Database config loaded from connection string');
+    } catch (err) {
+      console.warn('⚠️ Unable to parse DATABASE_URL, continuing with other env vars.', err);
+    }
+  }
 
-	// 2) Override/complete from explicit DB_* variables (Render provides these in your screenshot)
-	if (process.env.DB_HOST) process.env.PGHOST = process.env.DB_HOST;
-	if (process.env.DB_PORT) process.env.PGPORT = process.env.DB_PORT;
-	if (process.env.DB_USER) process.env.PGUSER = process.env.DB_USER;
-	if (process.env.DB_PASSWORD) process.env.PGPASSWORD = process.env.DB_PASSWORD;
-	if (process.env.DB_NAME) process.env.PGDATABASE = process.env.DB_NAME;
+  // 2) Override/complete from explicit DB_* variables
+  if (process.env.DB_HOST) process.env.PGHOST = process.env.DB_HOST;
+  if (process.env.DB_PORT) process.env.PGPORT = process.env.DB_PORT;
+  if (process.env.DB_USER) process.env.PGUSER = process.env.DB_USER;
+  if (process.env.DB_PASSWORD) process.env.PGPASSWORD = process.env.DB_PASSWORD;
+  if (process.env.DB_NAME) process.env.PGDATABASE = process.env.DB_NAME;
 
-	// 3) Small confirmation log (avoid printing passwords)
-	console.info('Database env resolved:',
-		{
-			PGHOST: process.env.PGHOST,
-			PGPORT: process.env.PGPORT,
-			PGUSER: process.env.PGUSER,
-			PGDATABASE: process.env.PGDATABASE
-		}
-	);
+  // 3) Log database config (without password)
+  console.log('📊 Database configuration:', {
+    host: process.env.PGHOST,
+    port: process.env.PGPORT,
+    user: process.env.PGUSER,
+    database: process.env.PGDATABASE,
+    hasPassword: !!process.env.PGPASSWORD
+  });
 }
 
 function ensureSmtpFlag() {
-	// If no SMTP config is present, set SKIP_SMTP so mailer modules can avoid connecting to localhost
-	const hasSmtpHost = !!(process.env.SMTP_HOST || process.env.SMTP_URL || process.env.MAIL_HOST);
-	if (!hasSmtpHost) {
-		process.env.SKIP_SMTP = 'true';
-		console.warn('No SMTP configuration detected. Emails will be skipped (SKIP_SMTP=true).');
-	}
+  const hasSmtpHost = !!(process.env.SMTP_HOST || process.env.SMTP_URL || process.env.MAIL_HOST);
+  if (!hasSmtpHost) {
+    process.env.SKIP_SMTP = 'true';
+    console.warn('📧 No SMTP configuration detected. Emails will be skipped (SKIP_SMTP=true).');
+  }
 }
 
-// Apply DB env mapping before server initialization
+// --- Startup sequence ---
+console.log('🚀 Iniciando servidor de Sistema de Inventarios Hasani...');
+
+// Apply environment configuration
 applyDatabaseEnvFromRender();
 ensureSmtpFlag();
 
-// Safe startup: captura errores de inicialización para que el proceso no termine si hay fallos no críticos
+// Safe startup with error handling
 try {
-	const server = new Server();
-	server.start();
+  const server = new Server();
+  server.start().catch((error) => {
+    console.error('❌ Error durante el inicio del servidor:', error);
+    process.exit(1);
+  });
 } catch (err) {
-	console.error('Startup error (degraded mode):', err);
-	// Levantar un servidor mínimo para que la instancia esté viva y pueda inspeccionarse
-	try {
-		const express = require('express');
-		const app = express();
-		app.get('/', (_req: any, res: any) => res.send('Service running in degraded mode'));
-		const p = process.env.PORT || 3000;
-		app.listen(p, () => console.log(`Degraded server listening on ${p}`));
-	} catch (e) {
-		console.error('Failed to start degraded server:', e);
-		// última defensa: crear un servidor HTTP básico
-		const p = Number(process.env.PORT || 3000);
-		http.createServer((req, res) => {
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end('Service running in degraded mode\n');
-		}).listen(p, () => console.log(`Basic degraded server listening on ${p}`));
-	}
+  console.error('❌ Startup error (degraded mode):', err);
+  
+  // Levantar un servidor mínimo para diagnóstico
+  try {
+    const express = require('express');
+    const app = express();
+    
+    // Configuración básica de CORS para el servidor de diagnóstico
+    app.use(cors({
+      origin: true,
+      credentials: true
+    }));
+    
+    app.get('/', (req: Request, res: Response) => {
+      res.json({ 
+        status: 'degraded',
+        message: 'Service running in degraded mode - Check server logs',
+        timestamp: new Date().toISOString()
+      });
+    });
+    
+    app.get('/health', (req: Request, res: Response) => {
+      res.json({ 
+        status: 'degraded',
+        message: 'Database connection failed - Running in degraded mode',
+        timestamp: new Date().toISOString()
+      });
+    });
+    
+    const port = process.env.PORT || 3000;
+    app.listen(port, () => {
+      console.log(`🟡 Degraded server listening on port ${port}`);
+      console.log(`🔍 Please check the database connection and environment variables`);
+    });
+  } catch (e) {
+    console.error('❌ Failed to start degraded server:', e);
+    
+    // Última defensa: servidor HTTP básico
+    const port = Number(process.env.PORT || 3000);
+    http.createServer((req, res) => {
+      res.writeHead(200, { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      });
+      
+      const response = {
+        status: 'critical',
+        message: 'Service in critical state - Check server initialization',
+        timestamp: new Date().toISOString()
+      };
+      
+      res.end(JSON.stringify(response));
+    }).listen(port, () => {
+      console.log(`🔴 Basic critical server listening on port ${port}`);
+    });
+  }
 }
