@@ -1,4 +1,4 @@
-// login.component.ts
+// login.component.ts - VERSION COMPLETA ACTUALIZADA
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ export class LoginComponent {
   loginForm: FormGroup;
   isLoading = false;
   errorMessage = '';
+  successMessage = '';
   
   // Estados para el flujo de autenticación
   requires2FA = false;
@@ -42,73 +43,60 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    console.log('🔍 DEBUG - Iniciando login...');
-    console.log('🔍 DEBUG - Backend URL:', environment.apiUrl);
-    console.log('🔍 DEBUG - Environment production:', environment.production);
+    console.log('🚀 INICIANDO LOGIN CON RUTAS DE PRUEBA');
+    console.log('🔍 Environment production:', environment.production);
     
     if (this.loginForm.valid) {
       this.isLoading = true;
       this.errorMessage = '';
+      this.successMessage = '';
       this.userEmail = this.loginForm.value.email;
 
-      // Debug: mostrar qué se está enviando
-      console.log('🔍 DEBUG - Credenciales:', {
-        email: this.loginForm.value.email,
-        backend: `${environment.apiUrl}/auth/login`,
-        timestamp: new Date().toISOString()
-      });
-
-      // Debug: verificar connectivity
-      this.testBackendConnectivity();
+      console.log('📧 Credenciales:', this.loginForm.value.email);
+      console.log('🌐 Backend URL: https://back-hasani.onrender.com/api/auth/test-login-simple');
 
       this.authService.login(
         this.loginForm.value.email,
         this.loginForm.value.password
       ).subscribe({
         next: (response: LoginResponse) => {
-          console.log('🔍 DEBUG - Respuesta EXITOSA del backend:', response);
+          console.log('✅ LOGIN EXITOSO:', response);
           this.isLoading = false;
           
           if (response.code === 'ACTIVE_SESSION_EXISTS') {
-            console.log('🔍 DEBUG - Sesión activa detectada');
+            console.log('🔍 Sesión activa detectada');
             this.handleActiveSession(response);
             return;
           }
 
           if (response.requires2fa) {
-            console.log('🔍 DEBUG - Requiere 2FA');
+            console.log('🔍 Requiere 2FA');
             this.requires2FA = true;
             this.tempToken = response.tempToken!;
             this.offlinePin = response.offlinePin!;
           } 
           else if (response.token && response.user) {
-            console.log('🔍 DEBUG - Login exitoso, redirigiendo...');
+            console.log('🎉 Login exitoso, redirigiendo...');
             this.handleSuccessfulLogin(response);
           } 
           else {
-            console.warn('🔍 DEBUG - Respuesta inesperada:', response);
+            console.warn('⚠️ Respuesta inesperada:', response);
             this.errorMessage = response.message || 'Error inesperado en el login';
           }
         },
         error: (error: any) => {
-          console.log('🔍 DEBUG - Error completo:', error);
-          console.log('🔍 DEBUG - Status:', error.status);
-          console.log('🔍 DEBUG - Status Text:', error.statusText);
-          console.log('🔍 DEBUG - Error message:', error.message);
-          console.log('🔍 DEBUG - Error name:', error.name);
-          console.log('🔍 DEBUG - URL intentada:', error.url);
-          console.log('🔍 DEBUG - Timestamp:', new Date().toISOString());
+          console.log('❌ ERROR EN LOGIN:', error);
+          console.log('🔍 Status:', error.status);
+          console.log('🔍 Status Text:', error.statusText);
+          console.log('🔍 Error message:', error.message);
+          console.log('🔍 URL intentada:', error.url);
           
           this.isLoading = false;
           
           if (error.status === 0) {
-            this.errorMessage = `No se puede conectar al backend en: ${environment.apiUrl}. 
-            Posibles causas:
-            - El backend no está funcionando
-            - Error de CORS
-            - Timeout de conexión`;
+            this.errorMessage = `No se puede conectar al backend. Verifica que esté funcionando.`;
           } else if (error.status === 404) {
-            this.errorMessage = `Endpoint no encontrado. Verifica que el backend tenga la ruta: ${environment.apiUrl}/auth/login`;
+            this.errorMessage = `Endpoint no encontrado. El backend no tiene la ruta solicitada.`;
           } else if (error.status === 500) {
             this.errorMessage = 'Error interno del servidor. Revisa los logs del backend.';
           } else if (error.status === 401) {
@@ -116,31 +104,94 @@ export class LoginComponent {
           } else {
             this.errorMessage = `Error ${error.status}: ${error.message || 'Error de conexión'}`;
           }
-          
-          console.error('Login error:', error);
         }
       });
     } else {
-      console.log('🔍 DEBUG - Formulario inválido');
+      console.log('⚠️ Formulario inválido');
       this.markFormGroupTouched();
     }
   }
 
+  // 🔥 NUEVOS MÉTODOS DE DEBUG
+  testBackendConnection() {
+    console.log('🔍 Probando conexión al backend...');
+    
+    this.authService.testBackendConnection().subscribe({
+      next: (response) => {
+        console.log('✅ Backend RESPONDE:', response);
+        this.successMessage = '✅ Backend funcionando correctamente!';
+        this.clearMessagesAfterDelay();
+      },
+      error: (error) => {
+        console.log('❌ Backend NO RESPONDE:', error);
+        this.errorMessage = '❌ Error conectando al backend: ' + error.message;
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  testDebugEndpoint() {
+    console.log('🔍 Probando endpoint debug...');
+    
+    this.authService.debugRequest({
+      test: 'debug desde frontend',
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      location: window.location.href
+    }).subscribe({
+      next: (response) => {
+        console.log('✅ Debug endpoint funciona:', response);
+        this.successMessage = '✅ Debug endpoint funcionando!';
+        this.clearMessagesAfterDelay();
+      },
+      error: (error) => {
+        console.log('❌ Debug endpoint falla:', error);
+        this.errorMessage = '❌ Debug endpoint error: ' + error.message;
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  testAllEndpoints() {
+    console.log('🧪 Probando todos los endpoints...');
+    
+    // Probar health check
+    fetch('https://back-hasani.onrender.com/health')
+      .then(r => r.json())
+      .then(result => console.log('✅ Health check:', result))
+      .catch(err => console.log('❌ Health check error:', err));
+
+    // Probar auth test
+    fetch('https://back-hasani.onrender.com/api/auth/test')
+      .then(r => r.json())
+      .then(result => console.log('✅ Auth test:', result))
+      .catch(err => console.log('❌ Auth test error:', err));
+
+    // Probar login simple
+    fetch('https://back-hasani.onrender.com/api/auth/test-login-simple', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@test.com', password: 'test' })
+    })
+    .then(r => r.json())
+    .then(result => console.log('✅ Login simple:', result))
+    .catch(err => console.log('❌ Login simple error:', err));
+  }
+
   // Método para probar conectividad con el backend
   private testBackendConnectivity() {
-    console.log('🔍 DEBUG - Probando conectividad con el backend...');
+    console.log('🔍 Probando conectividad con el backend...');
     
-    // Intentar hacer un health check simple
-    fetch(`${environment.apiUrl.replace('/api', '')}/health`)
+    fetch('https://back-hasani.onrender.com/health')
       .then(response => {
-        console.log('🔍 DEBUG - Health check status:', response.status);
+        console.log('🔍 Health check status:', response.status);
         return response.text();
       })
       .then(data => {
-        console.log('🔍 DEBUG - Health check response:', data);
+        console.log('🔍 Health check response:', data);
       })
       .catch(err => {
-        console.log('🔍 DEBUG - Health check FAILED:', err);
+        console.log('🔍 Health check FAILED:', err);
       });
   }
 
@@ -156,17 +207,15 @@ export class LoginComponent {
   private handleActiveSession(response: LoginResponse) {
     this.showSessionConflict = true;
     
-    console.log('🔍 DEBUG - Cargando sesiones activas...');
+    console.log('🔍 Cargando sesiones activas...');
     
-    // Cargar sesiones activas para mostrar información
     this.authService.getActiveSessions().subscribe({
       next: (sessionsResponse) => {
-        console.log('🔍 DEBUG - Sesiones activas cargadas:', sessionsResponse);
+        console.log('✅ Sesiones activas cargadas:', sessionsResponse);
         this.activeSessions = sessionsResponse.sessions;
       },
       error: (error) => {
-        console.error('🔍 DEBUG - Error cargando sesiones activas:', error);
-        // Si falla, mostrar mensaje genérico
+        console.error('❌ Error cargando sesiones activas:', error);
         this.activeSessions = [{
           id: 1,
           device_info: 'Dispositivo desconocido',
@@ -181,7 +230,7 @@ export class LoginComponent {
 
   // Forzar login cerrando sesiones anteriores
   forceLogin() {
-    console.log('🔍 DEBUG - Forzando login...');
+    console.log('🔍 Forzando login...');
     
     this.forceLoginLoading = true;
     this.errorMessage = '';
@@ -191,7 +240,7 @@ export class LoginComponent {
       this.loginForm.value.password
     ).subscribe({
       next: (response: LoginResponse) => {
-        console.log('🔍 DEBUG - Force login response:', response);
+        console.log('✅ Force login response:', response);
         this.forceLoginLoading = false;
         
         if (response.requires2fa) {
@@ -208,7 +257,7 @@ export class LoginComponent {
         }
       },
       error: (error: any) => {
-        console.error('🔍 DEBUG - Force login error:', error);
+        console.error('❌ Force login error:', error);
         this.forceLoginLoading = false;
         this.errorMessage = error.error?.message || 'Error en login forzado';
       }
@@ -217,25 +266,25 @@ export class LoginComponent {
 
   // Cancelar y volver al formulario normal
   cancelForceLogin() {
-    console.log('🔍 DEBUG - Cancelando force login');
+    console.log('🔍 Cancelando force login');
     this.showSessionConflict = false;
     this.activeSessions = [];
   }
 
   onVerify2FA(data: {tempToken: string, otp: string}) {
-    console.log('🔍 DEBUG - Verificando 2FA...');
+    console.log('🔍 Verificando 2FA...');
     
     this.isLoading = true;
     this.errorMessage = '';
 
     this.authService.verify2FA(data.tempToken, data.otp).subscribe({
       next: (response) => {
-        console.log('🔍 DEBUG - 2FA verification success:', response);
+        console.log('✅ 2FA verification success:', response);
         this.isLoading = false;
         this.handleSuccessfulLogin(response);
       },
       error: (error: any) => {
-        console.error('🔍 DEBUG - 2FA verification error:', error);
+        console.error('❌ 2FA verification error:', error);
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Error verificando el código 2FA';
       }
@@ -243,19 +292,19 @@ export class LoginComponent {
   }
 
   onVerifyOffline(data: {email: string, offlinePin: string}) {
-    console.log('🔍 DEBUG - Verificando PIN offline...');
+    console.log('🔍 Verificando PIN offline...');
     
     this.isLoading = true;
     this.errorMessage = '';
 
     this.authService.verifyOffline(data.email, data.offlinePin).subscribe({
       next: (response) => {
-        console.log('🔍 DEBUG - Offline verification success:', response);
+        console.log('✅ Offline verification success:', response);
         this.isLoading = false;
         this.handleSuccessfulLogin(response);
       },
       error: (error: any) => {
-        console.error('🔍 DEBUG - Offline verification error:', error);
+        console.error('❌ Offline verification error:', error);
         this.isLoading = false;
         this.errorMessage = error.error?.message || 'Error verificando el PIN offline';
       }
@@ -263,56 +312,51 @@ export class LoginComponent {
   }
 
   private handleSuccessfulLogin(response: any) {
-    console.log('🔍 DEBUG - Procesando login exitoso...');
+    console.log('🎉 Procesando login exitoso...');
     
     if (response.token) {
       this.authService.saveToken(response.token);
-      console.log('🔍 DEBUG - Token guardado');
+      console.log('✅ Token guardado');
     }
     if (response.user) {
       this.authService.saveUserToStorage(response.user);
-      console.log('🔍 DEBUG - Usuario guardado:', response.user);
+      console.log('✅ Usuario guardado:', response.user);
     }
     
-    console.log('🔍 DEBUG - Redirigiendo a dashboard...');
+    console.log('🔄 Redirigiendo a dashboard...');
     this.router.navigate(['/dashboard']);
   }
 
   onGoBack() {
-    console.log('🔍 DEBUG - Volviendo al formulario principal');
+    console.log('🔙 Volviendo al formulario principal');
     this.requires2FA = false;
     this.tempToken = '';
     this.offlinePin = '';
     this.errorMessage = '';
+    this.successMessage = '';
     this.showSessionConflict = false;
     this.activeSessions = [];
   }
 
   // Método para probar manualmente la conexión
   testConnection() {
-    console.log('🔍 DEBUG - Test manual de conexión');
+    console.log('🔍 Test manual de conexión');
     this.testBackendConnectivity();
-    
-    // También probar el endpoint específico de auth
-    fetch(`${environment.apiUrl}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: 'test@test.com',
-        password: 'test123'
-      })
-    })
-    .then(response => {
-      console.log('🔍 DEBUG - Test auth endpoint status:', response.status);
-      return response.text();
-    })
-    .then(data => {
-      console.log('🔍 DEBUG - Test auth endpoint response:', data);
-    })
-    .catch(err => {
-      console.log('🔍 DEBUG - Test auth endpoint FAILED:', err);
-    });
+  }
+
+  private clearMessagesAfterDelay() {
+    setTimeout(() => {
+      this.errorMessage = '';
+      this.successMessage = '';
+    }, 5000);
+  }
+
+  // Verificar el estado actual del environment
+  checkEnvironment() {
+    console.log('🔍 Environment actual:', environment);
+    console.log('🔍 API URL:', environment.apiUrl);
+    console.log('🔍 Production:', environment.production);
+    this.successMessage = `Environment: ${environment.production ? 'PRODUCCIÓN' : 'DESARROLLO'} - URL: ${environment.apiUrl}`;
+    this.clearMessagesAfterDelay();
   }
 }
