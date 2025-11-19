@@ -1,11 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-
-    // Necesario para que Resend funcione:
-    "module": "Node16",
+    "module": "commonjs",
     "moduleResolution": "node16",
-
     "outDir": "dist",
     "strict": false,
     "esModuleInterop": true,
