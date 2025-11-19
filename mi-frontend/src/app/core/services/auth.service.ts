@@ -1,4 +1,4 @@
-// auth.service.ts - VERSION DEFINITIVA
+// auth.service.ts - VERSION CORREGIDA (SIN RUTAS FALSAS)
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -62,9 +62,10 @@ export class AuthService {
   private platformId = inject(PLATFORM_ID);
   private router = inject(Router);
 
-  // 🔥🔥🔥 URL FIJA DE PRODUCCIÓN
+  // URL real del backend
   private apiUrl = 'https://back-hasani.onrender.com/api/auth';
 
+  // ---------- LOGIN NORMAL ----------
   login(
     email: string,
     password: string,
@@ -73,11 +74,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<LoginResponse> {
-    console.log('🚀 LOGIN - URL:', `${this.apiUrl}/test-login-simple`);
-    console.log('📧 Email:', email);
-    
-    // 🔥 USAR RUTA DE PRUEBA TEMPORAL
-    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-simple`, {
+    console.log('🚀 LOGIN URL:', `${this.apiUrl}/login`);
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
       email,
       password,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -87,6 +85,7 @@ export class AuthService {
     });
   }
 
+  // ---------- LOGIN FORZADO ----------
   forceLogin(
     email: string,
     password: string,
@@ -95,10 +94,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<LoginResponse> {
-    console.log('🚀 FORCE LOGIN - URL:', `${this.apiUrl}/test-login-force`);
-    
-    // 🔥 USAR RUTA DE PRUEBA TEMPORAL
-    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-force`, {
+    console.log('🚀 FORCE LOGIN URL:', `${this.apiUrl}/login-force`);
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login-force`, {
       email,
       password,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -108,6 +105,7 @@ export class AuthService {
     });
   }
 
+  // ---------- 2FA ----------
   verify2FA(
     tempToken: string,
     otp: string,
@@ -116,10 +114,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<Verify2FAResponse> {
-    console.log('🚀 2FA - URL:', `${this.apiUrl}/test-2fa`);
-    
-    // 🔥 USAR RUTA DE PRUEBA TEMPORAL
-    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/test-2fa`, {
+    console.log('🚀 2FA URL:', `${this.apiUrl}/verify-2fa`);
+    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-2fa`, {
       tempToken,
       otp,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -129,6 +125,7 @@ export class AuthService {
     });
   }
 
+  // ---------- OFFLINE PIN ----------
   verifyOffline(
     email: string,
     offlinePin: string,
@@ -137,10 +134,8 @@ export class AuthService {
     lat?: number,
     lng?: number
   ): Observable<Verify2FAResponse> {
-    console.log('🚀 OFFLINE - URL:', `${this.apiUrl}/test-verify-offline`);
-    
-    // 🔥 USAR RUTA DE PRUEBA TEMPORAL
-    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/test-verify-offline`, {
+    console.log('🚀 OFFLINE URL:', `${this.apiUrl}/offline`);
+    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/offline`, {
       email,
       offlinePin,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -174,7 +169,6 @@ export class AuthService {
 
   logout(): Observable<any> {
     const token = this.getToken();
-
     return this.http.post(`${this.apiUrl}/logout`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -202,10 +196,8 @@ export class AuthService {
   }
 
   getActiveSessions(): Observable<{ sessions: ActiveSession[], total: number }> {
-    console.log('🚀 SESSIONS - URL:', `${this.apiUrl}/test-sessions`);
-    
-    // 🔥 USAR RUTA DE PRUEBA TEMPORAL
-    return this.http.get<{ sessions: ActiveSession[], total: number }>(`${this.apiUrl}/test-sessions`);
+    console.log('🚀 SESSIONS URL:', `${this.apiUrl}/sessions`);
+    return this.http.get<{ sessions: ActiveSession[], total: number }>(`${this.apiUrl}/sessions`);
   }
 
   logoutOtherSessions(): Observable<any> {
@@ -234,9 +226,7 @@ export class AuthService {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const isExpired = Date.now() >= payload.exp * 1000;
-      if (isExpired) {
-        console.log('⚠️ Token expirado');
-      }
+      if (isExpired) console.log('⚠️ Token expirado');
       return isExpired;
     } catch {
       console.log('⚠️ Error verificando token');
@@ -269,13 +259,11 @@ export class AuthService {
     return user ? user.role : null;
   }
 
-  // 🔥 MÉTODO PARA PROBAR LA CONEXIÓN
   testBackendConnection(): Observable<any> {
-    console.log('🔍 Probando conexión con backend...');
+    console.log('🔍 Probando conexión backend...');
     return this.http.get('https://back-hasani.onrender.com/health');
   }
 
-  // 🔥 MÉTODO PARA DEBUG
   debugRequest(data: any): Observable<any> {
     console.log('🔍 Debug request:', data);
     return this.http.post(`${this.apiUrl}/debug`, data);
