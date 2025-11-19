@@ -1,4 +1,4 @@
-// auth.service.ts - VERSION CORREGIDA (SIN RUTAS FALSAS)
+// auth.service.ts - VERSION COMPLETA + RUTAS DE TEST
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -65,7 +65,9 @@ export class AuthService {
   // URL real del backend
   private apiUrl = 'https://back-hasani.onrender.com/api/auth';
 
-  // ---------- LOGIN NORMAL ----------
+  // ----------------------------------
+  // 🔥 LOGIN NORMAL (BACKEND REAL)
+  // ----------------------------------
   login(
     email: string,
     password: string,
@@ -85,7 +87,24 @@ export class AuthService {
     });
   }
 
-  // ---------- LOGIN FORZADO ----------
+  // ----------------------------------
+  // 🔥🔥🔥 LOGIN DE PRUEBAS (test-login-simple)
+  // ----------------------------------
+  testLoginSimple(
+    email: string,
+    password: string
+  ): Observable<LoginResponse> {
+    console.log('🧪 TEST LOGIN SIMPLE URL:', `${this.apiUrl}/test-login-simple`);
+
+    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-simple`, {
+      email,
+      password
+    });
+  }
+
+  // ----------------------------------
+  // 🔥 LOGIN FORZADO REAL
+  // ----------------------------------
   forceLogin(
     email: string,
     password: string,
@@ -105,7 +124,24 @@ export class AuthService {
     });
   }
 
-  // ---------- 2FA ----------
+  // ----------------------------------
+  // 🔥 FORCE LOGIN DE PRUEBAS
+  // ----------------------------------
+  testLoginForce(
+    email: string,
+    password: string
+  ): Observable<LoginResponse> {
+    console.log('🧪 TEST FORCE LOGIN URL:', `${this.apiUrl}/test-login-force`);
+
+    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-force`, {
+      email,
+      password
+    });
+  }
+
+  // ----------------------------------
+  // 🔥 2FA REAL
+  // ----------------------------------
   verify2FA(
     tempToken: string,
     otp: string,
@@ -125,7 +161,17 @@ export class AuthService {
     });
   }
 
-  // ---------- OFFLINE PIN ----------
+  // ----------------------------------
+  // 🔥 TEST 2FA
+  // ----------------------------------
+  test2FA(): Observable<any> {
+    console.log('🧪 TEST 2FA URL:', `${this.apiUrl}/test-2fa`);
+    return this.http.post(`${this.apiUrl}/test-2fa`, {});
+  }
+
+  // ----------------------------------
+  // 🔥 OFFLINE LOGIN REAL
+  // ----------------------------------
   verifyOffline(
     email: string,
     offlinePin: string,
@@ -145,6 +191,17 @@ export class AuthService {
     });
   }
 
+  // ----------------------------------
+  // 🔥 TEST OFFLINE
+  // ----------------------------------
+  testOffline(): Observable<any> {
+    console.log('🧪 TEST OFFLINE URL:', `${this.apiUrl}/test-verify-offline`);
+    return this.http.post(`${this.apiUrl}/test-verify-offline`, {});
+  }
+
+  // ----------------------------------
+  // GUARDAR DATOS
+  // ----------------------------------
   saveUserToStorage(user: any): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('user', JSON.stringify(user));
@@ -167,12 +224,13 @@ export class AuthService {
     return null;
   }
 
+  // ----------------------------------
+  // LOGOUT
+  // ----------------------------------
   logout(): Observable<any> {
     const token = this.getToken();
     return this.http.post(`${this.apiUrl}/logout`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     }).pipe(
       tap(() => {
         this.clearAuthData();
@@ -186,7 +244,7 @@ export class AuthService {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       localStorage.removeItem('user_data');
-      console.log('✅ Datos de autenticación limpiados');
+      console.log('🧹 Datos de autenticación limpiados');
     }
   }
 
@@ -208,12 +266,14 @@ export class AuthService {
     return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`);
   }
 
+  // ----------------------------------
+  // UTILIDADES
+  // ----------------------------------
   isAuthenticated(): boolean {
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('auth_token');
       const user = localStorage.getItem('user');
       const isAuth = !!(token && user && !this.isTokenExpired());
-      console.log('🔐 Estado autenticación:', isAuth);
       return isAuth;
     }
     return false;
@@ -225,11 +285,8 @@ export class AuthService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const isExpired = Date.now() >= payload.exp * 1000;
-      if (isExpired) console.log('⚠️ Token expirado');
-      return isExpired;
+      return Date.now() >= payload.exp * 1000;
     } catch {
-      console.log('⚠️ Error verificando token');
       return true;
     }
   }
@@ -243,9 +300,7 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     if (isPlatformBrowser(this.platformId)) {
-      const isLogged = !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
-      console.log('🔐 Usuario logueado:', isLogged);
-      return isLogged;
+      return !!localStorage.getItem('user') && !!localStorage.getItem('auth_token');
     }
     return false;
   }
@@ -259,13 +314,15 @@ export class AuthService {
     return user ? user.role : null;
   }
 
+  // ----------------------------------
+  // DEBUG / TESTS
+  // ----------------------------------
   testBackendConnection(): Observable<any> {
-    console.log('🔍 Probando conexión backend...');
+    console.log('🧪 Probando conexión backend...');
     return this.http.get('https://back-hasani.onrender.com/health');
   }
 
   debugRequest(data: any): Observable<any> {
-    console.log('🔍 Debug request:', data);
     return this.http.post(`${this.apiUrl}/debug`, data);
   }
 }
