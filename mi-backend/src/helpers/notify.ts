@@ -9,7 +9,7 @@ dotenv.config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ESTE debe ser un dominio verificado en Resend
-const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@tudominio.com";
+const EMAIL_FROM = process.env.EMAIL_FROM || "gearssgt@gmail.com";
 
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
