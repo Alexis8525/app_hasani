@@ -27,13 +27,13 @@ class Server {
     this.config();
     this.routes();
     this.swaggerDocs();
-    this.handleErrors(); // 🔥 IMPORTANTE: Mover esto al final
+    this.handleErrors(); // se ejecuta al final
   }
 
   config(): void {
     this.app.set('port', process.env.PORT || 3000);
 
-    // ✅ CORS CORREGIDO - Configuración mejorada
+    // CORS
     const allowedOrigins = [
       'https://app-hasani-11ms.onrender.com',
       'http://localhost:4200',
@@ -46,15 +46,14 @@ class Server {
     this.app.use(
       cors({
         origin: function (origin, callback) {
-          // Permitir requests sin origin (como mobile apps, Postman, curl)
+          // Permitir requests sin origin (Postman, curl, etc.)
           if (!origin) return callback(null, true);
-          
+
           if (allowedOrigins.indexOf(origin) === -1) {
             const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
             console.warn('🚫 CORS bloqueado para:', origin);
             return callback(new Error(msg), false);
           }
-          console.log('✅ CORS permitido para:', origin);
           return callback(null, true);
         },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -63,26 +62,72 @@ class Server {
       })
     );
 
-    // Middlewares de parsing
+    // body parsers
     this.app.use(express.json({
       limit: '50mb',
-      verify: (req: any, res, buf) => {
-        req.rawBody = buf.toString();
-      },
+      verify: (req: any, res, buf) => { req.rawBody = buf.toString(); }
     }));
     this.app.use(express.urlencoded({ limit: '50mb', extended: true }));
-    
+
     // Logging
     this.app.use(morgan('combined'));
 
-    // Middlewares globales de validación
-    this.app.use(GlobalValidationMiddleware.validateContentType);
-    this.app.use(GlobalValidationMiddleware.sanitizeInput);
-    this.app.use(GlobalValidationMiddleware.validateJSONSyntax);
+    // --- Debug logger para requests (útil en Render logs) ---
+    this.app.use((req: Request, res: Response, next: NextFunction) => {
+      // limitar tamaño de body mostrado
+      const bodyPreview = (() => {
+        try {
+          const b = (req as any).rawBody || req.body;
+          if (!b) return null;
+          const s = typeof b === 'string' ? b : JSON.stringify(b);
+          return s.length > 400 ? s.slice(0, 400) + '... (truncated)' : s;
+        } catch {
+          return null;
+        }
+      })();
+
+      console.log(`➡️ REQUEST ${req.method} ${req.originalUrl} | Content-Type: ${req.headers['content-type'] || 'none'} | bodyPreview: ${bodyPreview}`);
+      next();
+    });
+
+    // Middleware globales de validación (pueden causar que una petición sea detenida)
+    // Para DEBUG/DEPLOY rápido: permite desactivarlos con SKIP_GLOBAL_VALIDATION=true
+    const skipValidation = String(process.env.SKIP_GLOBAL_VALIDATION || '').toLowerCase() === 'true';
+    if (skipValidation) {
+      console.warn('⚠️ SKIP_GLOBAL_VALIDATION=true → se omiten middlewares de validación global (temporal).');
+    } else {
+      // envolver cada middleware en try/catch para asegurar que responda correctamente si lanza error
+      this.app.use((req: Request, res: Response, next: NextFunction) => {
+        try {
+          return GlobalValidationMiddleware.validateContentType(req as any, res as any, next as any);
+        } catch (err) {
+          console.error('❌ Error en validateContentType (capturado):', err);
+          return res.status(400).json({ message: 'Invalid Content-Type or validation error' });
+        }
+      });
+
+      this.app.use((req: Request, res: Response, next: NextFunction) => {
+        try {
+          return GlobalValidationMiddleware.sanitizeInput(req as any, res as any, next as any);
+        } catch (err) {
+          console.error('❌ Error en sanitizeInput (capturado):', err);
+          return res.status(400).json({ message: 'Input sanitization error' });
+        }
+      });
+
+      this.app.use((req: Request, res: Response, next: NextFunction) => {
+        try {
+          return GlobalValidationMiddleware.validateJSONSyntax(req as any, res as any, next as any);
+        } catch (err) {
+          console.error('❌ Error en validateJSONSyntax (capturado):', err);
+          return res.status(400).json({ message: 'Invalid JSON syntax' });
+        }
+      });
+    }
   }
 
   routes(): void {
-    // Health check mejorado
+    // Health check
     this.app.get('/health', (req: Request, res: Response) => {
       res.status(200).json({
         status: 'OK',
@@ -94,7 +139,7 @@ class Server {
       });
     });
 
-    // Root endpoint
+    // Root
     this.app.get('/', (req: Request, res: Response) => {
       res.json({
         message: '¡Backend de Sistema de Inventarios Hasani funcionando! 🚀',
@@ -112,7 +157,7 @@ class Server {
       });
     });
 
-    // API routes
+    // Montar rutas API (las tuyas)
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/clientes', clienteRoutes);
@@ -121,17 +166,18 @@ class Server {
     this.app.use('/api/movimientos', movimientoRoutes);
     this.app.use('/api/bitacora', bitacoraRoutes);
 
-    // Test endpoint para auth
+    // Si quieres una ruta de prueba dentro del router, puedes definir aquí una GET simple:
+    // Esto ayuda a verificar si /api/auth/test responde sin depender del router
     this.app.get('/api/auth/test', (req: Request, res: Response) => {
       res.json({
-        message: '✅ Endpoint de auth funcionando correctamente',
+        message: '✅ Endpoint de auth funcionando correctamente (desde index.ts)',
         timestamp: new Date().toISOString()
       });
     });
   }
 
   handleErrors(): void {
-    // Manejo de rutas no encontradas
+    // Manejo de rutas no encontradas (catch-all)
     this.app.use('*', (req: Request, res: Response) => {
       res.status(404).json({
         code: 1,
@@ -144,26 +190,23 @@ class Server {
     });
 
     // Manejo global de errores
-    this.app.use(
-      (err: any, req: Request, res: Response, next: NextFunction) => {
-        console.error('❌ Error global no manejado:', err);
+    this.app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+      console.error('❌ Error global no manejado:', err && err.stack ? err.stack : err);
 
-        // Si es error de CORS
-        if (err.message.includes('CORS')) {
-          return res.status(403).json({
-            code: 1,
-            message: 'Acceso CORS denegado',
-            details: err.message
-          });
-        }
-
-        res.status(err.status || 500).json({
+      if (err && String(err.message || '').toLowerCase().includes('cors')) {
+        return res.status(403).json({
           code: 1,
-          message: err.message || 'Error interno del servidor',
-          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+          message: 'Acceso CORS denegado',
+          details: err.message
         });
       }
-    );
+
+      res.status(err && err.status ? err.status : 500).json({
+        code: 1,
+        message: err && err.message ? err.message : 'Error interno del servidor',
+        stack: process.env.NODE_ENV === 'development' ? (err && err.stack) : undefined
+      });
+    });
   }
 
   swaggerDocs(): void {
@@ -194,7 +237,6 @@ class Server {
         console.log(`📚 API Docs: http://localhost:${this.app.get('port')}/api-docs`);
       });
 
-      // Manejo graceful de shutdown
       process.on('SIGTERM', () => {
         console.log('🛑 SIGTERM recibido, cerrando servidor gracefully...');
         server.close(() => {
@@ -210,9 +252,8 @@ class Server {
   }
 }
 
-// --- Helper functions for environment setup ---
+// --- Helpers (DB env, SMTP flag) ---
 function applyDatabaseEnvFromRender() {
-  // 1) If a connection string exists, parse it first
   const dbUrl = process.env.DATABASE_URL || process.env.DB_URL;
   if (dbUrl) {
     try {
@@ -229,14 +270,12 @@ function applyDatabaseEnvFromRender() {
     }
   }
 
-  // 2) Override/complete from explicit DB_* variables
   if (process.env.DB_HOST) process.env.PGHOST = process.env.DB_HOST;
   if (process.env.DB_PORT) process.env.PGPORT = process.env.DB_PORT;
   if (process.env.DB_USER) process.env.PGUSER = process.env.DB_USER;
   if (process.env.DB_PASSWORD) process.env.PGPASSWORD = process.env.DB_PASSWORD;
   if (process.env.DB_NAME) process.env.PGDATABASE = process.env.DB_NAME;
 
-  // 3) Log database config (without password)
   console.log('📊 Database configuration:', {
     host: process.env.PGHOST,
     port: process.env.PGPORT,
@@ -254,14 +293,12 @@ function ensureSmtpFlag() {
   }
 }
 
-// --- Startup sequence ---
+// --- Startup ---
 console.log('🚀 Iniciando servidor de Sistema de Inventarios Hasani...');
 
-// Apply environment configuration
 applyDatabaseEnvFromRender();
 ensureSmtpFlag();
 
-// Safe startup with error handling
 try {
   const server = new Server();
   server.start().catch((error) => {
@@ -270,61 +307,22 @@ try {
   });
 } catch (err) {
   console.error('❌ Startup error (degraded mode):', err);
-  
-  // Levantar un servidor mínimo para diagnóstico
+
+  // degraded server fallback (unchanged)
   try {
-    const express = require('express');
-    const app = express();
-    
-    // Configuración básica de CORS para el servidor de diagnóstico
-    app.use(cors({
-      origin: true,
-      credentials: true
-    }));
-    
-    app.get('/', (req: Request, res: Response) => {
-      res.json({ 
-        status: 'degraded',
-        message: 'Service running in degraded mode - Check server logs',
-        timestamp: new Date().toISOString()
-      });
-    });
-    
-    app.get('/health', (req: Request, res: Response) => {
-      res.json({ 
-        status: 'degraded',
-        message: 'Database connection failed - Running in degraded mode',
-        timestamp: new Date().toISOString()
-      });
-    });
-    
+    const expressFallback = require('express');
+    const appFallback = expressFallback();
+    appFallback.use(cors({ origin: true, credentials: true }));
+    appFallback.get('/', (req: any, res: any) => res.json({ status: 'degraded', message: 'Service running in degraded mode - Check server logs', timestamp: new Date().toISOString() }));
+    appFallback.get('/health', (req: any, res: any) => res.json({ status: 'degraded', message: 'Database connection failed - Running in degraded mode', timestamp: new Date().toISOString() }));
     const port = process.env.PORT || 3000;
-    app.listen(port, () => {
-      console.log(`🟡 Degraded server listening on port ${port}`);
-      console.log(`🔍 Please check the database connection and environment variables`);
-    });
+    appFallback.listen(port, () => console.log(`🟡 Degraded server listening on port ${port}`));
   } catch (e) {
     console.error('❌ Failed to start degraded server:', e);
-    
-    // Última defensa: servidor HTTP básico
     const port = Number(process.env.PORT || 3000);
     http.createServer((req, res) => {
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-      });
-      
-      const response = {
-        status: 'critical',
-        message: 'Service in critical state - Check server initialization',
-        timestamp: new Date().toISOString()
-      };
-      
-      res.end(JSON.stringify(response));
-    }).listen(port, () => {
-      console.log(`🔴 Basic critical server listening on port ${port}`);
-    });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' });
+      res.end(JSON.stringify({ status: 'critical', message: 'Service in critical state - Check server initialization', timestamp: new Date().toISOString() }));
+    }).listen(port, () => { console.log(`🔴 Basic critical server listening on port ${port}`); });
   }
 }
