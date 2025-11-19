@@ -20,7 +20,13 @@ export async function sendEmail(to: string, subject: string, html: string) {
       html
     });
 
-    console.log("✉️ Email enviado:", response.id || response);
+    // 🟢 Nuevo formateo correcto para Resend v3
+    if (response.data) {
+      console.log("✉️ Email enviado:", response.data.id);
+    } else if (response.error) {
+      console.error("❌ Error en Resend:", response.error.message);
+    }
+
     return response;
   } catch (error: any) {
     console.error("❌ Error enviando correo:", error.message);
