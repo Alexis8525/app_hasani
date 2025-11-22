@@ -1,12 +1,89 @@
 <!-- dashboard.component.html -->
 <div class="dashboard-container">
-    <div class="dashboard-header">
-      <h1>Dashboard del Sistema</h1>
-      <p class="welcome-message">Bienvenido al sistema de gestión de inventarios</p>
-      <button class="btn btn-primary btn-refresh" (click)="cargarDashboard()" [disabled]="loading">
-        {{ loading ? 'Actualizando...' : '🔄 Actualizar' }}
-      </button>
+    <!-- Agregar en la sección de dashboard-header -->
+<div class="dashboard-header">
+  <h1>Dashboard del Sistema</h1>
+  <p class="welcome-message">Bienvenido al sistema de gestión de inventarios</p>
+  <div class="header-actions">
+    <button class="btn btn-primary btn-refresh" (click)="cargarDashboard()" [disabled]="loading">
+      {{ loading ? 'Actualizando...' : '🔄 Actualizar' }}
+    </button>
+    <button class="btn btn-success btn-excel" (click)="generarReporteExcel()" [disabled]="generandoExcel">
+      {{ generandoExcel ? '⏳ Generando...' : '📊 Descargar Excel' }}
+    </button>
+  </div>
+</div>
+
+<!-- Agregar en la sección de acciones rápidas -->
+<div class="quick-actions">
+  <h2>🚀 Acciones Rápidas</h2>
+  <div class="actions-grid">
+    <button class="action-btn" (click)="registrarMovimiento()">
+      <span class="action-icon">📥</span>
+      <span class="action-text">Registrar Entrada</span>
+    </button>
+    
+    <button class="action-btn" (click)="registrarSalida()">
+      <span class="action-icon">📤</span>
+      <span class="action-text">Registrar Salida</span>
+    </button>
+    
+    <button class="action-btn" (click)="gestionarProductos()">
+      <span class="action-icon">📦</span>
+      <span class="action-text">Gestionar Productos</span>
+    </button>
+    
+    <button class="action-btn" (click)="gestionarProveedores()">
+      <span class="action-icon">🏢</span>
+      <span class="action-text">Gestionar Proveedores</span>
+    </button>
+
+    <!-- Nuevo botón para reportes -->
+    <button class="action-btn" (click)="generarReporteExcel()" [disabled]="generandoExcel">
+      <span class="action-icon">📊</span>
+      <span class="action-text">
+        {{ generandoExcel ? 'Generando Excel...' : 'Reporte Excel' }}
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Modal para seleccionar tipo de reporte (opcional) -->
+<div *ngIf="showReportModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>📊 Generar Reporte Excel</h3>
+      <button class="btn-close" (click)="closeReportModal()">×</button>
     </div>
+    <div class="modal-body">
+      <div class="report-options">
+        <div class="report-option" (click)="generarReporteCompleto()">
+          <div class="option-icon">📋</div>
+          <div class="option-info">
+            <h4>Reporte Completo</h4>
+            <p>Todos los datos del sistema incluyendo métricas, alertas y movimientos</p>
+          </div>
+        </div>
+        
+        <div class="report-option" (click)="generarReporteMovimientos()">
+          <div class="option-icon">🔄</div>
+          <div class="option-info">
+            <h4>Reporte de Movimientos</h4>
+            <p>Solo movimientos de inventario de los últimos 30 días</p>
+          </div>
+        </div>
+        
+        <div class="report-option" (click)="generarReporteStock()">
+          <div class="option-icon">📦</div>
+          <div class="option-info">
+            <h4>Reporte de Stock</h4>
+            <p>Estado actual del inventario y productos con stock bajo</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
   
     <!-- Métricas principales -->
     <div class="metrics-grid">

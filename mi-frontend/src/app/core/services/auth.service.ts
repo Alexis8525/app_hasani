@@ -39,6 +39,27 @@ export interface Verify2FAResponse {
   };
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  role: string;
+  phone: string;
+  nombre?: string; // Nuevo campo opcional
+}
+
+export interface RegisterResponse {
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    role: string;
+    phone: string;
+    created_at: string;
+  };
+  offlinePin: string;
+  qrCodeUrl: string;
+}
+
 export interface ActiveSession {
   id: number;
   device_info: string;
@@ -60,6 +81,10 @@ export class AuthService {
   private platformId = inject(PLATFORM_ID);
   private apiUrl = 'http://localhost:3000/api/auth';
   private router = inject(Router);
+
+  register(userData: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, userData);
+  }
 
   login(email: string, password: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {

@@ -12,6 +12,8 @@ export class ValidationMiddleware {
     next();
   }
 
+  
+
   static validatePasswordFormat(req: Request, res: Response, next: NextFunction) {
     const { password } = req.body;
     if (password) {
@@ -128,6 +130,15 @@ export const EndpointValidators = {
     ValidationMiddleware.validateRequiredFields(['email', 'password']),
     ValidationMiddleware.validateEmailFormat,
     ValidationMiddleware.validatePasswordFormat,
+  ],
+
+  validateRegister: [
+    ValidationMiddleware.validateRequiredFields(['email', 'password', 'role', 'phone']),
+    ValidationMiddleware.validateEmailFormat,
+    ValidationMiddleware.validatePasswordFormat,
+    ValidationMiddleware.validatePhoneFormat,
+    ValidationMiddleware.validateRoleFormat,
+    ValidationMiddleware.sanitizeInput,
   ],
 
   validate2FA: [

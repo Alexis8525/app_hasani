@@ -19,7 +19,7 @@ class AuthRoutes {
 
     // POST /auth/login - Login de usuario
     this.router.post('/login', EndpointValidators.validateLogin, AuthController.login);
-
+    this.router.post('/register', EndpointValidators.validateRegister, AuthController.register);
     this.router.post('/2fa/verify', EndpointValidators.validate2FA, AuthController.verify2FA);
 
     this.router.post(

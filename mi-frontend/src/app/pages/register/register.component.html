@@ -1,0 +1,162 @@
+<!-- src/app/pages/register/register.component.html -->
+<div class="register-container">
+    <div class="register-card">
+      <!-- Logo y Título -->
+      <div class="register-header">
+        <div class="logo-container">
+          <span class="logo">👤</span>
+        </div>
+        <h2>Crear Cuenta</h2>
+        <p class="register-subtitle">Regístrate para comenzar</p>
+      </div>
+  
+      <!-- Formulario de Registro -->
+      <form *ngIf="!successData" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="nombre">Nombre Completo</label>
+          <input
+            id="nombre"
+            type="text"
+            formControlName="nombre"
+            class="form-control"
+            [class.is-invalid]="nombre?.invalid && nombre?.touched"
+            placeholder="Tu nombre completo"
+          >
+          <span *ngIf="nombre?.invalid && nombre?.touched" class="error-message">
+            <span *ngIf="nombre?.errors?.['required']">El nombre es obligatorio</span>
+          </span>
+        </div>
+  
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Correo Electrónico</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="form-control"
+            [class.is-invalid]="email?.invalid && email?.touched"
+            placeholder="tu@email.com"
+          >
+          <span *ngIf="email?.invalid && email?.touched" class="error-message">
+            <span *ngIf="email?.errors?.['required']">El correo es obligatorio</span>
+            <span *ngIf="email?.errors?.['email']">Formato de correo inválido</span>
+          </span>
+        </div>
+  
+        <!-- Teléfono -->
+        <div class="form-group">
+          <label for="phone">Teléfono</label>
+          <input
+            id="phone"
+            type="tel"
+            formControlName="phone"
+            class="form-control"
+            [class.is-invalid]="phone?.invalid && phone?.touched"
+            placeholder="1234567890"
+          >
+          <span *ngIf="phone?.invalid && phone?.touched" class="error-message">
+            <span *ngIf="phone?.errors?.['required']">El teléfono es obligatorio</span>
+            <span *ngIf="phone?.errors?.['pattern']">Formato de teléfono inválido (10-15 dígitos)</span>
+          </span>
+        </div>
+  
+        <!-- Contraseña -->
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <div class="password-input-container">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              class="form-control"
+              [class.is-invalid]="password?.invalid && password?.touched"
+              placeholder="••••••••"
+            >
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="toggle-password"
+            >
+              {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+            </button>
+          </div>
+          <span *ngIf="password?.invalid && password?.touched" class="error-message">
+            <span *ngIf="password?.errors?.['required']">La contraseña es obligatoria</span>
+            <span *ngIf="password?.errors?.['minlength']">Mínimo 8 caracteres</span>
+            <span *ngIf="password?.errors?.['pattern']">
+              Debe incluir mayúscula, número y símbolo especial
+            </span>
+          </span>
+        </div>
+  
+        <!-- Confirmar Contraseña -->
+        <div class="form-group">
+          <label for="confirmPassword">Confirmar Contraseña</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            formControlName="confirmPassword"
+            class="form-control"
+            [class.is-invalid]="(confirmPassword?.invalid && confirmPassword?.touched) || registerForm.errors?.['mismatch']"
+            placeholder="••••••••"
+          >
+          <span *ngIf="confirmPassword?.invalid && confirmPassword?.touched" class="error-message">
+            <span *ngIf="confirmPassword?.errors?.['required']">Confirma tu contraseña</span>
+          </span>
+          <span *ngIf="registerForm.errors?.['mismatch'] && confirmPassword?.touched" class="error-message">
+            Las contraseñas no coinciden
+          </span>
+        </div>
+  
+        <!-- Mensaje de Error -->
+        <div *ngIf="errorMessage" class="alert-error">
+          <p>{{ errorMessage }}</p>
+        </div>
+  
+        <!-- Botón de Registro -->
+        <button
+          type="submit"
+          [disabled]="loading"
+          class="btn btn-primary"
+        >
+          <span *ngIf="!loading">Crear Cuenta</span>
+          <span *ngIf="loading" class="loading">Creando cuenta...</span>
+        </button>
+  
+        <!-- Enlace a Login -->
+        <div class="login-link">
+          <p>
+            ¿Ya tienes cuenta?
+            <button type="button" (click)="goToLogin()">
+              Inicia Sesión
+            </button>
+          </p>
+        </div>
+      </form>
+  
+      <!-- Pantalla de Éxito -->
+      <div *ngIf="successData" class="success-screen">
+        <div class="success-icon">
+          <svg fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        
+        <h3>¡Cuenta Creada Exitosamente!</h3>
+        <p class="success-message">Tu cuenta de cliente ha sido creada correctamente.</p>
+        
+        <!-- Botones de Acción -->
+        <div class="success-actions">
+          <button
+            (click)="goToLogin()"
+            class="btn btn-primary"
+          >
+            Ir al Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
