@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MovimientosService, ProductoStockBajo } from '../../core/services/movimentos.service';
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
+import { firstValueFrom } from 'rxjs';
 
 interface DashboardMetrics {
   totalProductos: number;
@@ -52,15 +53,6 @@ interface ProductoCategoria {
   porcentaje: number;
 }
 
-// Tipo local mínimo
-interface ProductoStockBajo {
-  id_producto?: number;
-  nombre?: string;
-  stock_actual?: number;
-  stock_minimo?: number;
-  [k: string]: any;
-}
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -69,10 +61,14 @@ interface ProductoStockBajo {
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  private readonly movimientosService = inject(MovimientosService);
-  private readonly productosService = inject(ProductosService);
-  private readonly proveedoresService = inject(ProveedoresService);
-  private readonly router = inject(Router);
+  private movimientosService = inject(MovimientosService);
+  private productosService = inject(ProductosService);
+  private proveedoresService = inject(ProveedoresService);
+  private router = inject(Router);
+
+  private todosMovimientos: any[] = [];
+  private todosProductos: any[] = [];
+  private todosProveedores: any[] = [];
 
   // Datos del dashboard
   metrics: DashboardMetrics = {
@@ -93,12 +89,7 @@ export class DashboardComponent implements OnInit {
   generandoExcel = false;
   showReportModal = false;
 
-  private todosMovimientos: any[] = [];
-  private todosProductos: any[] = [];
-  private todosProveedores: any[] = [];
-
-  // relaxed typing for product alerts; replace with ProductoStockBajo interface later
-  productosStockBajo: any[] = [];
+  
 
   ngOnInit() {
     this.cargarDashboard();
@@ -387,28 +378,28 @@ export class DashboardComponent implements OnInit {
   private async cargarMetricas() {
     try {
       // Cargar productos
-      const productosResponse = await firstValueFrom(this.productosService.getAll());
+      const productosResponse = await this.productosService.getAll().toPromise();
       if (productosResponse?.code === 0 && productosResponse.data) {
         this.metrics.totalProductos = productosResponse.data.length;
       }
 
       // Cargar productos con stock bajo
-      const stockBajoResponse = await firstValueFrom(this.movimientosService.getProductosStockBajo());
+      const stockBajoResponse = await this.movimientosService.getProductosStockBajo().toPromise();
       if (stockBajoResponse?.code === 0 && stockBajoResponse.data) {
         this.metrics.productosStockBajo = stockBajoResponse.data.length;
       }
 
       // Cargar proveedores
-      const proveedoresResponse = await firstValueFrom(this.proveedoresService.getAll());
+      const proveedoresResponse = await this.proveedoresService.getAll().toPromise();
       if (proveedoresResponse?.code === 0 && proveedoresResponse.data) {
         this.metrics.totalProveedores = proveedoresResponse.data.length;
       }
 
       // Cargar movimientos para calcular movimientos de hoy
-      const movimientosResponse = await firstValueFrom(this.movimientosService.getAll());
+      const movimientosResponse = await this.movimientosService.getAll().toPromise();
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         const hoy = new Date().toDateString();
-        this.metrics.movimientosHoy = movimientosResponse.data.filter((mov) =>
+        this.metrics.movimientosHoy = movimientosResponse.data.filter(mov => 
           new Date(mov.fecha).toDateString() === hoy
         ).length;
       }
@@ -420,18 +411,18 @@ export class DashboardComponent implements OnInit {
 
   private async cargarAlertas() {
     try {
-      const alertasResponse = await firstValueFrom(this.movimientosService.getProductosStockBajo());
+      const alertasResponse = await this.movimientosService.getProductosStockBajo().toPromise();
       
       if (alertasResponse?.code === 0 && alertasResponse.data) {
         this.alertasUrgentes = alertasResponse.data.map((producto: ProductoStockBajo, index: number) => {
           let nivel: 'critico' | 'alto' | 'medio' = 'medio';
           
-          if (producto['nivel_alerta'] === 'CRÍTICO') nivel = 'critico';
-          else if (producto['nivel_alerta'] === 'ALTO') nivel = 'alto';
+          if (producto.nivel_alerta === 'CRÍTICO') nivel = 'critico';
+          else if (producto.nivel_alerta === 'ALTO') nivel = 'alto';
           
           return {
             id: index + 1,
-            titulo: `Stock ${producto['nivel_alerta'].toLowerCase()}`,
+            titulo: `Stock ${producto.nivel_alerta.toLowerCase()}`,
             descripcion: `Producto "${producto.nombre}" por debajo del mínimo (Stock: ${producto.stock_actual}, Mínimo: ${producto.stock_minimo})`,
             nivel: nivel,
             tiempo: 'Reciente',
@@ -446,13 +437,15 @@ export class DashboardComponent implements OnInit {
 
   private async cargarMovimientosRecientes() {
     try {
-      const movimientosResponse = await firstValueFrom(this.movimientosService.getAll());
+      const movimientosResponse = await this.movimientosService.getAll().toPromise();
       
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         // Ordenar por fecha más reciente y tomar los últimos 5
-        const movimientosOrdenados = (movimientosResponse.data as any[]).sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 5);
+        const movimientosOrdenados = movimientosResponse.data
+          .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+          .slice(0, 5);
 
-        this.movimientosRecientes = movimientosOrdenados.map((mov: any) => ({
+        this.movimientosRecientes = movimientosOrdenados.map(mov => ({
           id: mov.id_movimiento,
           producto: mov.producto_nombre || 'Producto sin nombre',
           tipo: mov.tipo,
@@ -468,14 +461,14 @@ export class DashboardComponent implements OnInit {
   private async cargarEstadisticas() {
     try {
       // Cargar movimientos para estadísticas de la semana
-      const movimientosResponse = await firstValueFrom(this.movimientosService.getAll());
+      const movimientosResponse = await this.movimientosService.getAll().toPromise();
       
       if (movimientosResponse?.code === 0 && movimientosResponse.data) {
         this.calcularMovimientosSemana(movimientosResponse.data);
       }
 
       // Cargar productos para estadísticas por categoría
-      const productosResponse = await firstValueFrom(this.productosService.getAll());
+      const productosResponse = await this.productosService.getAll().toPromise();
       
       if (productosResponse?.code === 0 && productosResponse.data) {
         this.calcularProductosPorCategoria(productosResponse.data);
@@ -505,10 +498,10 @@ export class DashboardComponent implements OnInit {
   private calcularProductosPorCategoria(productos: any[]) {
     const categoriasMap = new Map<string, number>();
     
-    for (const producto of productos) {
+    productos.forEach(producto => {
       const categoria = producto.categoria || 'Sin categoría';
       categoriasMap.set(categoria, (categoriasMap.get(categoria) || 0) + 1);
-    }
+    });
 
     const total = productos.length;
     
