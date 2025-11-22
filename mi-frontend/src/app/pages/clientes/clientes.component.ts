@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ClientesService, Cliente } from '../../core/services/clientes.service';
+import { ClientesService } from '../../core/services/clientes.service';
 import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
@@ -13,11 +13,11 @@ import { ModalComponent } from '../../layout/modal/modal.component';
   styleUrls: ['./clientes.component.css']
 })
 export class ClientesComponent implements OnInit {
-  private clientesService = inject(ClientesService);
-  private fb = inject(FormBuilder);
+  private readonly clientesService = inject(ClientesService);
+  private readonly fb = inject(FormBuilder);
 
   // Listas y estados
-  clientes: Cliente[] = [];
+  clientes: any[] = [];
   filteredClientes: Cliente[] = [];
   
   // Formularios
@@ -36,7 +36,7 @@ export class ClientesComponent implements OnInit {
   showDeleteModal = false;
   
   // Datos seleccionados
-  selectedCliente: Cliente | null = null;
+  selectedCliente: any = null;
 
   // Usuario actual (debería venir de tu servicio de autenticación)
   currentUserId: number = 1;
@@ -141,8 +141,8 @@ export class ClientesComponent implements OnInit {
     this.selectedCliente = cliente;
     this.clienteForm.patchValue({
       nombre: cliente.nombre,
-      telefono: cliente.telefono || '',
-      contacto: cliente.contacto || ''
+      telefono: cliente['telefono'] || '',
+      contacto: cliente['contacto'] || ''
     });
     this.showEditModal = true;
   }
@@ -280,4 +280,12 @@ export class ClientesComponent implements OnInit {
     }
     return '';
   }
+}
+
+// Tipo local mínimo para compilar; reemplaza con la definición real si la exportas desde el servicio.
+interface Cliente {
+  id?: number;
+  nombre?: string;
+  email?: string;
+  [k: string]: any;
 }

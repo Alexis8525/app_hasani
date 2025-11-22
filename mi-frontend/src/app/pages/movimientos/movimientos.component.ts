@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MovimientosService, Movimiento, ProductoStockBajo } from '../../core/services/movimentos.service';
+import { MovimientosService } from '../../core/services/movimentos.service';
 import { ModalComponent } from '../../layout/modal/modal.component';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -14,12 +14,14 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrls: ['./movimientos.component.css']
 })
 export class MovimientosComponent implements OnInit {
-  private movimientosService = inject(MovimientosService);
-  private fb = inject(FormBuilder);
+  private readonly movimientosService = inject(MovimientosService);
+  private readonly fb = inject(FormBuilder);
 
   // Listas y estados
-  movimientos: Movimiento[] = [];
-  filteredMovimientos: Movimiento[] = [];
+  // relaxed types to avoid strict template errors; replace with real interfaces later
+  movimientos: any[] = [];
+  filteredMovimientos: any[] = []; // PROPRIEDAD FALTANTE AGREGADA
+  alertas: any[] = [];
   productosStockBajo: ProductoStockBajo[] = [];
   
   // Formularios
@@ -314,7 +316,7 @@ export class MovimientosComponent implements OnInit {
   }
 
   getAlertLevelClass(alerta: ProductoStockBajo): string {
-    switch (alerta.nivel_alerta) {
+    switch (alerta['nivel_alerta']) {
       case 'CRÍTICO': return 'critico';
       case 'ALTO': return 'alto';
       case 'MEDIO': return 'medio';
@@ -330,4 +332,21 @@ export class MovimientosComponent implements OnInit {
       default: return 'ℹ️';
     }
   }
+}
+
+// Tipos locales mínimos para compilar; preferible exportarlos desde movimientos.service.
+interface Movimiento {
+  id?: number;
+  tipo?: string;
+  fecha?: string;
+  monto?: number;
+  [k: string]: any;
+}
+
+interface ProductoStockBajo {
+  id_producto?: number;
+  nombre?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  [k: string]: any;
 }

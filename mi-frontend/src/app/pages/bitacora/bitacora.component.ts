@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BitacoraService, Bitacora } from '../../core/services/bitacora.service';
+import { BitacoraService } from '../../core/services/bitacora.service';
 import { ModalComponent } from '../../layout/modal/modal.component';
 
 @Component({
@@ -33,6 +33,9 @@ export class BitacoraComponent implements OnInit {
   // Estados de modales
   showCreateModal = false;
   showSearchModal = false;
+
+  // relaxed typing to avoid template index-signature errors; replace with proper type later
+  registros: any[] = [];
 
   constructor() {
     // Formulario para crear registros en bitácora
@@ -253,4 +256,13 @@ export class BitacoraComponent implements OnInit {
       default: return 'Completa';
     }
   }
+}
+
+// Tipo local mínimo para compilar; reemplaza con la definición real si la exportas desde el servicio.
+interface Bitacora {
+  id?: number;
+  usuario?: string;
+  accion?: string;
+  fecha?: string;
+  [k: string]: any;
 }

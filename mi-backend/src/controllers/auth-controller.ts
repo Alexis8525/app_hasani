@@ -16,68 +16,75 @@ import { sendEmail, sendSMS } from '../helpers/notify';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 export class AuthController {
-  // Login 2FA
+
+  // ======================================================
+  //                  LOGIN NORMAL / 2FA
+  // ======================================================
   static async login(req: Request, res: Response) {
     const { email, password, lat, lng, device_info, ip_address } = req.body;
+
     try {
       const user = await UserModel.findByEmailFull(email);
       if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
+
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) return res.status(401).json({ message: 'Credenciales inválidas' });
-      // ✅ VERIFICAR SI YA TIENE SESIÓN ACTIVA - BLOQUEAR si existe
+
+      // Revisar si ya tiene una sesión activa
       const activeSessions = await SessionModel.findActiveByUserId(user.id);
       if (activeSessions.length > 0) {
         return res.status(409).json({
-          message: 'Ya hay una sesión activa. Cierre la sesión actual antes de iniciar una nueva.',
+          message: 'Ya hay una sesión activa. Cierra la sesión actual antes de iniciar otra.',
           code: 'ACTIVE_SESSION_EXISTS',
-          existing_session: {
-            id: activeSessions[0].id,
-            created_at: activeSessions[0].created_at,
-            device_info: activeSessions[0].device_info,
-            ip_address: activeSessions[0].ip_address,
-          },
+          existing_session: activeSessions[0],
         });
       }
-      // Solo si NO tiene sesión activa, continuar...
+
+      // Si tiene 2FA activado → enviar códigos
       if (user.two_factor_enabled) {
         const otp = generateOTP(6);
         const offlinePin = generateOTP(6);
         const tempToken = generateTempToken({ id: user.id, type: '2fa' });
 
         await PasswordResetModel.create(user.id, tempToken, '2fa', otp, 5, lat, lng, offlinePin);
+
         try {
           if (user.email) {
             await sendEmail(
               user.email,
               'Tu código 2FA',
-              `
-              <p>Tu código 2FA: <b>${otp}</b></p>
-            `
+              `<p>Tu código 2FA es <b>${otp}</b></p>`
             );
           }
+
           if (user.phone) {
             await sendSMS(user.phone, `Código 2FA: ${otp}`);
           }
+
         } catch (err) {
-          console.warn('No se pudo enviar notificación online');
+          console.warn('⚠ No se pudo enviar el 2FA vía email o SMS');
         }
-        return res.status(200).json({
+
+        return res.json({
           message: '2FA requerido',
           requires2fa: true,
           tempToken,
           offlinePin,
         });
       }
-      // Usuario sin 2FA
+
+      // Login SIN 2FA
       const token = generateToken({
         id: user.id,
         role: user.role,
         session_type: 'online',
       });
+
       const tokenIdentifier = extractJwtSignature(token);
+
       const session = await SessionModel.create({
         user_id: user.id,
-        token: token,
+        token,
         token_identifier: tokenIdentifier,
         device_info: device_info || req.headers['user-agent'],
         ip_address: ip_address || req.ip,
@@ -86,189 +93,205 @@ export class AuthController {
         expires_at: new Date(Date.now() + 60 * 60 * 1000),
         last_activity: new Date(),
       });
+
       return res.json({
         message: 'Login exitoso',
         token,
         user: { id: user.id, email: user.email, role: user.role },
-        session: {
-          id: session.id,
-          created_at: session.created_at,
-          expires_at: session.expires_at,
-        },
+        session,
       });
-    } catch (err: any) {
-      // ✅ Capturar el error de "sesión ya activa"
-      if (err.message.includes('Ya existe una sesión activa')) {
-        return res.status(409).json({
-          message: err.message,
-          code: 'ACTIVE_SESSION_EXISTS',
-        });
-      }
 
+    } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error en login', error: err.message });
     }
   }
-  // Verificar 2FA - CORREGIDO
+
+
+  // ======================================================
+  //                      VERIFICAR 2FA
+  // ======================================================
   static async verify2FA(req: Request, res: Response) {
     const { tempToken, otp, device_info, ip_address, lat, lng } = req.body;
+
     try {
-      console.log('TempToken recibido:', tempToken);
-      console.log('OTP recibido:', otp);
       const reset = await PasswordResetModel.findValidByTokenAndOtp(
         tempToken,
         '2fa',
         String(otp).trim()
       );
+
       if (!reset)
-        return res.status(400).json({ message: 'Token o código 2FA inválido o expirado' });
+        return res.status(400).json({ message: 'Código 2FA inválido o expirado' });
+
       await PasswordResetModel.markUsed(reset.id);
+
       const userData = await UserModel.findById(reset.user_id);
-      if (!userData || !userData.id) {
-        return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
-      }
-      // Generar token final y crear sesión
+      if (!userData) return res.status(400).json({ message: 'Usuario no encontrado' });
+
       const finalToken = generateToken({
         id: userData.id,
         role: userData.role,
         session_type: 'online',
       });
+
       const tokenIdentifier = extractJwtSignature(finalToken);
-      const now = new Date(); // UTC implícito
-      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+
       const session = await SessionModel.create({
-        user_id: userData.id, // Ahora userData.id está verificado
+        user_id: userData.id,
         token: finalToken,
         token_identifier: tokenIdentifier,
         device_info: device_info || req.headers['user-agent'],
         ip_address: ip_address || req.ip,
         latitude: lat,
         longitude: lng,
-        expires_at: expiresAt, // siempre después de created_at
+        expires_at: expiresAt,
         last_activity: now,
       });
 
       res.json({
         message: '2FA verificado',
         token: finalToken,
-        user: { id: userData.id, email: userData.email, role: userData.role },
-        session: {
-          id: session.id,
-          created_at: session.created_at,
-          expires_at: session.expires_at,
-        },
+        user: userData,
+        session,
       });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error verificando 2FA', error: err.message });
     }
   }
-  // Verify Offline - CORREGIDO
+
+
+  // ======================================================
+  //                 LOGIN OFFLINE (PIN)
+  // ======================================================
   static async verifyOffline(req: Request, res: Response) {
     const { email, offlinePin, device_info, ip_address, lat, lng } = req.body;
+
     try {
-      console.log('=== VERIFICACIÓN OFFLINE ===');
-      console.log('Email:', email);
-      console.log('PIN recibido:', offlinePin);
-      if (!email || !offlinePin) {
-        return res.status(400).json({ message: 'Email y PIN son requeridos' });
-      }
-      // Verificar PIN offline
       const reset = await PasswordResetModel.verifyOffline(email, offlinePin);
       if (!reset) {
-        return res.status(400).json({ message: 'PIN offline inválido o expirado' });
+        return res.status(400).json({ message: 'PIN inválido o expirado' });
       }
-      // Marcar como usado
+
       await PasswordResetModel.markUsed(reset.id);
-      // Obtener información del usuario
+
       const userData = await UserModel.findByEmail(email);
-      if (!userData || !userData.id) {
-        return res.status(400).json({ message: 'Usuario no encontrado o ID inválido' });
-      }
-      // Generar token de sesión offline
+      if (!userData) return res.status(400).json({ message: 'Usuario no encontrado' });
+
       const token = generateToken({
         id: userData.id,
         role: userData.role,
         session_type: 'offline',
       });
+
       const tokenIdentifier = extractJwtSignature(token);
-      const now = new Date(); // UTC implícito
-      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+
       const session = await SessionModel.create({
-        user_id: userData.id, // Ahora userData.id está verificado
-        token: token,
+        user_id: userData.id,
+        token,
         token_identifier: tokenIdentifier,
         device_info: device_info || req.headers['user-agent'],
         ip_address: ip_address || req.ip,
         latitude: lat,
         longitude: lng,
-        expires_at: expiresAt, // siempre después de created_at
+        expires_at: expiresAt,
         last_activity: now,
       });
+
       res.json({
         message: 'Login offline exitoso',
         token,
-        user: { id: userData.id, email: userData.email, role: userData.role },
-        session: {
-          id: session.id,
-          created_at: session.created_at,
-          expires_at: session.expires_at,
-          session_type: 'offline',
-        },
+        user: userData,
+        session,
       });
+
     } catch (err: any) {
-      console.error('Error en verifyOffline:', err);
-      res.status(500).json({ message: 'Error verificando PIN offline', error: err.message });
+      console.error(err);
+      res.status(500).json({ message: 'Error en login offline', error: err.message });
     }
   }
-  // Resto de métodos sin cambios...
+
+
+  // ======================================================
+  //               PASSWORD RESET - REQUEST
+  // ======================================================
   static async requestPasswordReset(req: Request, res: Response) {
     const { email, via = 'email' } = req.body;
+
     try {
       const user = await UserModel.findByEmailFull(email);
+
       if (!user)
-        return res.status(200).json({ message: 'Si existe la cuenta, se enviará un correo' });
+        return res.status(200).json({ message: 'Si existe, se enviará un correo' });
+
       const tokenPlain = crypto.randomBytes(32).toString('hex');
       const otp = via === 'sms' ? generateOTP(6) : undefined;
+
       await PasswordResetModel.create(user.id, tokenPlain, 'reset', otp, 30);
+
       const resetLink = `${process.env.APP_URL}/auth/password-reset/confirm?token=${tokenPlain}`;
+
       if (via === 'email') {
         await sendEmail(
           user.email,
           'Restablecer contraseña',
-          `<p>Este es tu token= <a>${tokenPlain} </a></p>`
+          `<p>Token: <b>${tokenPlain}</b></p>`
         );
       } else if (via === 'sms' && user.phone) {
         await sendSMS(user.phone, `Código para restablecer: ${otp}`);
       }
-      return res.json({ message: 'Recibirás instrucciones para restablecer la contraseña' });
+
+      res.json({ message: 'Revisa tu bandeja para continuar' });
+
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ message: 'Error solicitando restablecimiento', error: err.message });
+      res.status(500).json({ message: 'Error en reset request', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //                 PASSWORD RESET - CONFIRM
+  // ======================================================
   static async confirmPasswordReset(req: Request, res: Response) {
     const { token, newPassword } = req.body;
+
     try {
-      if (!token) return res.status(400).json({ message: 'Falta el token' });
       const reset = await PasswordResetModel.findValidByToken(token, 'reset');
-      if (!reset) return res.status(400).json({ message: 'Token inválido o expirado' });
-      if (!UserModel.validatePasswordFormat(newPassword)) {
-        return res.status(400).json({ message: 'Formato de contraseña inválido' });
-      }
+      if (!reset) return res.status(400).json({ message: 'Token inválido' });
+
       const hashed = await bcrypt.hash(newPassword, 10);
+
       await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashed, reset.user_id]);
+
       await PasswordResetModel.markUsed(reset.id);
-      return res.json({ message: 'Contraseña restablecida correctamente' });
+
+      res.json({ message: 'Contraseña restablecida correctamente' });
+
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ message: 'Error confirmando restablecimiento', error: err.message });
+      res.status(500).json({ message: 'Error confirmando contraseña', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //                RECUPERAR USUARIO
+  // ======================================================
   static async recoverUsername(req: Request, res: Response) {
     const { emailOrPhone } = req.body;
+
     try {
       let userData = null;
+
       if (emailOrPhone.includes('@')) {
         userData = await UserModel.findByEmail(emailOrPhone);
       } else {
@@ -278,26 +301,34 @@ export class AuthController {
         );
         userData = result.rows[0];
       }
+
       if (!userData)
         return res.status(200).json({ message: 'Si existe, recibirás la información' });
+
       if (userData.email) {
         await sendEmail(
           userData.email,
           'Recuperación de usuario',
-          `<p>Tu usuario: <b>${userData.email}</b></p>`
+          `<p>Tu usuario es <b>${userData.email}</b></p>`
         );
       }
+
       if (userData.phone) {
-        await sendSMS(userData.phone, `Tu usuario: ${userData.email}`);
+        await sendSMS(userData.phone, `Tu usuario es: ${userData.email}`);
       }
 
-      return res.json({ message: 'Si existe, recibirás la información' });
+      res.json({ message: 'Información enviada si la cuenta existe' });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error recuperando usuario', error: err.message });
     }
   }
-  // Métodos de gestión de sesiones
+
+
+  // ======================================================
+  //                       LOGOUT
+  // ======================================================
   static async logout(req: AuthenticatedRequest, res: Response) {
     try {
       const token = req.headers['authorization']?.split(' ')[1];
@@ -305,89 +336,108 @@ export class AuthController {
       if (token) {
         await SessionModel.invalidate(token);
       }
-      res.json({ message: 'Sesión cerrada exitosamente' });
+
+      res.json({ message: 'Sesión cerrada' });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error cerrando sesión', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //               LISTAR SESIONES ACTIVAS
+  // ======================================================
   static async getActiveSessions(req: AuthenticatedRequest, res: Response) {
     try {
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
 
-      const safeSessions = sessions.map((session) => ({
-        id: session.id,
-        device_info: session.device_info,
-        ip_address: session.ip_address,
-        created_at: session.created_at,
-        last_activity: session.last_activity,
-        expires_at: session.expires_at,
-        location:
-          session.latitude && session.longitude
-            ? {
-                lat: session.latitude,
-                lng: session.longitude,
-              }
-            : null,
-      }));
       res.json({
-        sessions: safeSessions,
-        total: safeSessions.length,
+        sessions,
+        total: sessions.length,
       });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error obteniendo sesiones', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //              CERRAR OTRAS SESIONES
+  // ======================================================
   static async logoutOtherSessions(req: AuthenticatedRequest, res: Response) {
     try {
       const currentToken = req.headers['authorization']?.split(' ')[1];
+
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
-      for (const session of sessions) {
-        if (session.token !== currentToken) {
-          await SessionModel.invalidate(session.token);
+
+      for (const s of sessions) {
+        if (s.token !== currentToken) {
+          await SessionModel.invalidate(s.token);
         }
       }
-      res.json({ message: 'Otras sesiones cerradas exitosamente' });
+
+      res.json({ message: 'Otras sesiones cerradas' });
+
     } catch (err: any) {
       console.error(err);
-      res.status(500).json({ message: 'Error cerrando otras sesiones', error: err.message });
+      res.status(500).json({ message: 'Error cerrando sesiones', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //                   CERRAR 1 SESIÓN
+  // ======================================================
   static async logoutSession(req: AuthenticatedRequest, res: Response) {
+    const { sessionId } = req.params;
+
     try {
-      const { sessionId } = req.params;
       const sessions = await SessionModel.findActiveByUserId(req.user.id);
+      const target = sessions.find((s) => s.id === Number(sessionId));
 
-      const sessionToLogout = sessions.find((s) => s.id === parseInt(sessionId));
-
-      if (!sessionToLogout) {
+      if (!target)
         return res.status(404).json({ message: 'Sesión no encontrada' });
-      }
-      await SessionModel.invalidate(sessionToLogout.token);
-      res.json({ message: 'Sesión cerrada exitosamente' });
+
+      await SessionModel.invalidate(target.token);
+
+      res.json({ message: 'Sesión cerrada' });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error cerrando sesión', error: err.message });
     }
   }
+
+
+  // ======================================================
+  //                   REFRESH TOKEN
+  // ======================================================
   static async refreshToken(req: AuthenticatedRequest, res: Response) {
     try {
       const oldToken = req.headers['authorization']?.split(' ')[1];
 
-      if (!oldToken) {
-        return res.status(400).json({ message: 'Token requerido' });
-      }
+      if (!oldToken) return res.status(400).json({ message: 'Token requerido' });
+
+      // Invalida token viejo
       await SessionModel.invalidate(oldToken);
+
+      // Genera uno nuevo
       const newToken = generateToken({
         id: req.user.id,
         role: req.user.role,
         session_type: 'online',
       });
+
       const tokenIdentifier = extractJwtSignature(newToken);
-      const now = new Date(); // UTC implícito
-      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
-      const session = await SessionModel.create({
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
+
+      await SessionModel.create({
         user_id: req.user.id,
         token: newToken,
         token_identifier: tokenIdentifier,
@@ -395,14 +445,16 @@ export class AuthController {
         ip_address: req.session?.ip_address || req.ip,
         latitude: req.session?.latitude,
         longitude: req.session?.longitude,
-        expires_at: expiresAt, // siempre después de created_at
+        expires_at: expiresAt,
         last_activity: now,
       });
+
       res.json({
         message: 'Token renovado',
         token: newToken,
-        expires_at: session.expires_at,
+        expires_at: expiresAt,
       });
+
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ message: 'Error renovando token', error: err.message });
