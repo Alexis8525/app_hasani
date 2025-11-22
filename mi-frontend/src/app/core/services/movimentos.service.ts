@@ -1,43 +1,83 @@
+// services/movimientos.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
+export interface Movimiento {
+  id_movimiento: number;
+  fecha: Date;
+  tipo: 'Entrada' | 'Salida';
+  id_producto: number;
+  cantidad: number;
+  referencia?: string;
+  responsable: number;
+  id_cliente?: number;
+  created_at: Date;
+  producto_nombre?: string;
+  responsable_nombre?: string;
+  cliente_nombre?: string;
+}
+
+export interface ProductoStockBajo {
+  id_producto: number;
+  nombre: string;
+  codigo?: string; // Hacerla opcional
+  stock_actual: number;
+  stock_minimo: number;
+  diferencia: number;
+  nivel_alerta: string;
+}
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data?: T;
+  total?: number;
+  busquedaOriginal?: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovimientosService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/movimientos`;
+  private apiUrl = 'http://localhost:3000/api/movimientos';
 
-  getAll(): Observable<any> {
-    return this.http.get<any>(this.apiUrl);
+  // Obtener todos los movimientos
+  getAll(): Observable<ApiResponse<Movimiento[]>> {
+    return this.http.get<ApiResponse<Movimiento[]>>(this.apiUrl);
   }
 
-  getById(id: number): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/buscar`, { id });
+  // Buscar movimiento por ID
+  getById(id: number): Observable<ApiResponse<Movimiento>> {
+    return this.http.post<ApiResponse<Movimiento>>(`${this.apiUrl}/buscar`, { id });
   }
 
-  create(movimiento: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, movimiento);
+  // Crear nuevo movimiento
+  create(movimiento: Omit<Movimiento, 'id_movimiento' | 'fecha' | 'created_at' | 'producto_nombre' | 'responsable_nombre' | 'cliente_nombre'>): Observable<ApiResponse<Movimiento>> {
+    return this.http.post<ApiResponse<Movimiento>>(this.apiUrl, movimiento);
   }
 
-  getByProducto(nombreProducto: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/producto`, { nombreProducto });
+  // Buscar movimientos por producto
+  getByProducto(nombreProducto: string): Observable<ApiResponse<Movimiento[]>> {
+    return this.http.post<ApiResponse<Movimiento[]>>(`${this.apiUrl}/producto`, { nombreProducto });
   }
 
-  getByDateRange(fechaInicio: string, fechaFin: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/report/date-range`, {
+  // Buscar movimientos por rango de fechas
+  getByDateRange(fechaInicio: string, fechaFin: string): Observable<ApiResponse<Movimiento[]>> {
+    return this.http.post<ApiResponse<Movimiento[]>>(`${this.apiUrl}/report/date-range`, {
       fechaInicio,
       fechaFin
     });
   }
 
-  verificarAlertasStock(): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/stock/verificar-alertas`, {});
+  // Verificar alertas de stock
+  verificarAlertasStock(): Observable<ApiResponse<ProductoStockBajo[]>> {
+    return this.http.post<ApiResponse<ProductoStockBajo[]>>(`${this.apiUrl}/stock/verificar-alertas`, {});
   }
 
-  getProductosStockBajo(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/stock/bajo`);
+  // Obtener productos con stock bajo
+  getProductosStockBajo(): Observable<ApiResponse<ProductoStockBajo[]>> {
+    return this.http.get<ApiResponse<ProductoStockBajo[]>>(`${this.apiUrl}/stock/bajo`);
   }
 }

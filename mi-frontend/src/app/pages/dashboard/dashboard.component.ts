@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MovimientosService, ProductoStockBajo } from '../../core/services/movimentos.service';
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
+import { firstValueFrom } from 'rxjs';
 
 
 interface DashboardMetrics {
@@ -51,15 +52,6 @@ interface ProductoCategoria {
   nombre: string;
   cantidad: number;
   porcentaje: number;
-}
-
-// Tipo local mínimo
-interface ProductoStockBajo {
-  id_producto?: number;
-  nombre?: string;
-  stock_actual?: number;
-  stock_minimo?: number;
-  [k: string]: any;
 }
 
 @Component({
