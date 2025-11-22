@@ -1,4 +1,3 @@
-// auth.service.ts - VERSION COMPLETA + RUTAS DE TEST
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -14,7 +13,6 @@ export interface LoginResponse {
   user?: {
     id: number;
     email: string;
-    name?: string;
     role: string;
   };
   session?: {
@@ -81,6 +79,7 @@ export interface ActiveSession {
 export class AuthService {
   private http = inject(HttpClient);
   private platformId = inject(PLATFORM_ID);
+  private apiUrl = 'http://localhost:3000/api/auth';
   private router = inject(Router);
 
   register(userData: RegisterRequest): Observable<RegisterResponse> {
@@ -98,34 +97,9 @@ export class AuthService {
     });
   }
 
-  // ----------------------------------
-  // 🔥🔥🔥 LOGIN DE PRUEBAS (test-login-simple)
-  // ----------------------------------
-  testLoginSimple(
-    email: string,
-    password: string
-  ): Observable<LoginResponse> {
-    console.log('🧪 TEST LOGIN SIMPLE URL:', `${this.apiUrl}/test-login-simple`);
-
-    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-simple`, {
-      email,
-      password
-    });
-  }
-
-  // ----------------------------------
-  // 🔥 LOGIN FORZADO REAL
-  // ----------------------------------
-  forceLogin(
-    email: string,
-    password: string,
-    deviceInfo?: string,
-    ipAddress?: string,
-    lat?: number,
-    lng?: number
-  ): Observable<LoginResponse> {
-    console.log('🚀 FORCE LOGIN URL:', `${this.apiUrl}/login-force`);
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login-force`, {
+  // Nuevo método para forzar login destruyendo sesiones anteriores
+  forceLogin(email: string, password: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/force-login`, {
       email,
       password,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -135,34 +109,8 @@ export class AuthService {
     });
   }
 
-  // ----------------------------------
-  // 🔥 FORCE LOGIN DE PRUEBAS
-  // ----------------------------------
-  testLoginForce(
-    email: string,
-    password: string
-  ): Observable<LoginResponse> {
-    console.log('🧪 TEST FORCE LOGIN URL:', `${this.apiUrl}/test-login-force`);
-
-    return this.http.post<LoginResponse>(`${this.apiUrl}/test-login-force`, {
-      email,
-      password
-    });
-  }
-
-  // ----------------------------------
-  // 🔥 2FA REAL
-  // ----------------------------------
-  verify2FA(
-    tempToken: string,
-    otp: string,
-    deviceInfo?: string,
-    ipAddress?: string,
-    lat?: number,
-    lng?: number
-  ): Observable<Verify2FAResponse> {
-    console.log('🚀 2FA URL:', `${this.apiUrl}/verify-2fa`);
-    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-2fa`, {
+  verify2FA(tempToken: string, otp: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<Verify2FAResponse> {
+    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/2fa/verify`, {
       tempToken,
       otp,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -172,27 +120,8 @@ export class AuthService {
     });
   }
 
-  // ----------------------------------
-  // 🔥 TEST 2FA
-  // ----------------------------------
-  test2FA(): Observable<any> {
-    console.log('🧪 TEST 2FA URL:', `${this.apiUrl}/test-2fa`);
-    return this.http.post(`${this.apiUrl}/test-2fa`, {});
-  }
-
-  // ----------------------------------
-  // 🔥 OFFLINE LOGIN REAL
-  // ----------------------------------
-  verifyOffline(
-    email: string,
-    offlinePin: string,
-    deviceInfo?: string,
-    ipAddress?: string,
-    lat?: number,
-    lng?: number
-  ): Observable<Verify2FAResponse> {
-    console.log('🚀 OFFLINE URL:', `${this.apiUrl}/offline`);
-    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/offline`, {
+  verifyOffline(email: string, offlinePin: string, deviceInfo?: string, ipAddress?: string, lat?: number, lng?: number): Observable<Verify2FAResponse> {
+    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-offline`, {
       email,
       offlinePin,
       device_info: deviceInfo || (isPlatformBrowser(this.platformId) ? navigator.userAgent : ''),
@@ -202,28 +131,15 @@ export class AuthService {
     });
   }
 
-  // ----------------------------------
-  // 🔥 TEST OFFLINE
-  // ----------------------------------
-  testOffline(): Observable<any> {
-    console.log('🧪 TEST OFFLINE URL:', `${this.apiUrl}/test-verify-offline`);
-    return this.http.post(`${this.apiUrl}/test-verify-offline`, {});
-  }
-
-  // ----------------------------------
-  // GUARDAR DATOS
-  // ----------------------------------
   saveUserToStorage(user: any): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('user', JSON.stringify(user));
-      console.log('✅ Usuario guardado en localStorage:', user.email);
     }
   }
 
   saveToken(token: string): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('auth_token', token);
-      console.log('✅ Token guardado en localStorage');
     }
   }
 
@@ -235,13 +151,14 @@ export class AuthService {
     return null;
   }
 
-  // ----------------------------------
-  // LOGOUT
-  // ----------------------------------
+  // Logout mejorado que elimina la sesión del backend
   logout(): Observable<any> {
     const token = this.getToken();
+    
     return this.http.post(`${this.apiUrl}/logout`, {}, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     }).pipe(
       tap(() => {
         this.clearAuthData();
@@ -255,41 +172,41 @@ export class AuthService {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       localStorage.removeItem('user_data');
-      console.log('🧹 Datos de autenticación limpiados');
     }
   }
 
+  // Método para logout forzado (sin llamar al backend)
   forceLogout(): void {
     this.clearAuthData();
     this.router.navigate(['/login']);
   }
 
+  // Obtener sesiones activas
   getActiveSessions(): Observable<{ sessions: ActiveSession[], total: number }> {
-    console.log('🚀 SESSIONS URL:', `${this.apiUrl}/sessions`);
     return this.http.get<{ sessions: ActiveSession[], total: number }>(`${this.apiUrl}/sessions`);
   }
 
+  // Cerrar otras sesiones
   logoutOtherSessions(): Observable<any> {
     return this.http.post(`${this.apiUrl}/sessions/logout-others`, {});
   }
 
+  // Cerrar sesión específica
   logoutSession(sessionId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/sessions/${sessionId}`);
   }
 
-  // ----------------------------------
-  // UTILIDADES
-  // ----------------------------------
+  // Verificar si el usuario está autenticado
   isAuthenticated(): boolean {
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('auth_token');
       const user = localStorage.getItem('user');
-      const isAuth = !!(token && user && !this.isTokenExpired());
-      return isAuth;
+      return !!(token && user && !this.isTokenExpired());
     }
     return false;
   }
 
+  // Verificar si el token está expirado
   private isTokenExpired(): boolean {
     const token = this.getToken();
     if (!token) return true;
@@ -302,6 +219,7 @@ export class AuthService {
     }
   }
 
+  // Obtener token
   getToken(): string | null {
     if (isPlatformBrowser(this.platformId)) {
       return localStorage.getItem('auth_token');
@@ -316,24 +234,14 @@ export class AuthService {
     return false;
   }
 
+  // Obtener datos del usuario actual
   getCurrentUser() {
     return this.loadUserFromStorage();
   }
 
+  // Obtener rol del usuario actual
   getCurrentUserRole(): string | null {
     const user = this.loadUserFromStorage();
     return user ? user.role : null;
-  }
-
-  // ----------------------------------
-  // DEBUG / TESTS
-  // ----------------------------------
-  testBackendConnection(): Observable<any> {
-    console.log('🧪 Probando conexión backend...');
-    return this.http.get('https://back-hasani.onrender.com/health');
-  }
-
-  debugRequest(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/debug`, data);
   }
 }
