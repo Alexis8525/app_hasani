@@ -9,10 +9,12 @@ import { ProveedoresComponent } from './pages/proveedores/proveedores.component'
 import { MovimientosComponent } from './pages/movimientos/movimientos.component';
 import { BitacoraComponent } from './pages/bitacora/bitacora.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { RegisterComponent } from './pages/register/register.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'register', component: RegisterComponent },
   { 
     path: '',
     component: MainLayoutComponent,

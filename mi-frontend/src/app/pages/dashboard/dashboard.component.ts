@@ -1,9 +1,8 @@
 // dashboard.component.ts
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { MovimientosService } from '../../core/services/movimentos.service';
+import { Router, RouterLink } from '@angular/router';
+import { MovimientosService, ProductoStockBajo } from '../../core/services/movimentos.service';
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
 
@@ -15,6 +14,14 @@ interface DashboardMetrics {
   trendProductos: number;
   trendMovimientos: number;
 }
+
+interface ExcelReport {
+  filename: string;
+  data: any[];
+  headers: string[];
+  sheetName: string;
+}
+
 
 interface Alerta {
   id: number;
@@ -57,7 +64,7 @@ interface ProductoStockBajo {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule,RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -83,6 +90,12 @@ export class DashboardComponent implements OnInit {
   productosPorCategoria: ProductoCategoria[] = [];
   
   loading = true;
+  generandoExcel = false;
+  showReportModal = false;
+
+  private todosMovimientos: any[] = [];
+  private todosProductos: any[] = [];
+  private todosProveedores: any[] = [];
 
   // relaxed typing for product alerts; replace with ProductoStockBajo interface later
   productosStockBajo: any[] = [];
@@ -103,6 +116,272 @@ export class DashboardComponent implements OnInit {
     ]).finally(() => {
       this.loading = false;
     });
+  }
+
+  generarReporteExcel() {
+    this.showReportModal = true;
+  }
+
+  closeReportModal() {
+    this.showReportModal = false;
+  }
+
+  async generarReporteCompleto() {
+    this.generandoExcel = true;
+    this.showReportModal = false;
+
+    try {
+      // Cargar todos los datos necesarios
+      await this.cargarDatosCompletos();
+
+      // Crear reporte completo
+      const reporte: ExcelReport = {
+        filename: `Reporte_Completo_${this.formatDateForFilename()}.xlsx`,
+        data: this.prepararDatosCompleto(),
+        headers: ['Tipo', 'Descripción', 'Valor', 'Fecha', 'Estado'],
+        sheetName: 'Reporte Completo'
+      };
+
+      this.descargarExcel(reporte);
+
+    } catch (error) {
+      console.error('Error generando reporte completo:', error);
+      alert('Error al generar el reporte. Intenta nuevamente.');
+    } finally {
+      this.generandoExcel = false;
+    }
+  }
+
+  async generarReporteMovimientos() {
+    this.generandoExcel = true;
+    this.showReportModal = false;
+
+    try {
+      const movimientosResponse = await this.movimientosService.getAll().toPromise();
+      
+      if (movimientosResponse?.code === 0 && movimientosResponse.data) {
+        const reporte: ExcelReport = {
+          filename: `Reporte_Movimientos_${this.formatDateForFilename()}.xlsx`,
+          data: this.prepararDatosMovimientos(movimientosResponse.data),
+          headers: ['ID', 'Producto', 'Tipo', 'Cantidad', 'Fecha', 'Usuario'],
+          sheetName: 'Movimientos'
+        };
+
+        this.descargarExcel(reporte);
+      }
+
+    } catch (error) {
+      console.error('Error generando reporte movimientos:', error);
+      alert('Error al generar el reporte de movimientos.');
+    } finally {
+      this.generandoExcel = false;
+    }
+  }
+
+  async generarReporteStock() {
+    this.generandoExcel = true;
+    this.showReportModal = false;
+
+    try {
+      const [productosResponse, stockBajoResponse] = await Promise.all([
+        this.productosService.getAll().toPromise(),
+        this.movimientosService.getProductosStockBajo().toPromise()
+      ]);
+
+      const reporte: ExcelReport = {
+        filename: `Reporte_Stock_${this.formatDateForFilename()}.xlsx`,
+        data: this.prepararDatosStock(
+          productosResponse?.data || [],
+          stockBajoResponse?.data || []
+        ),
+        headers: ['Producto', 'Categoría', 'Stock Actual', 'Stock Mínimo', 'Estado', 'Última Actualización'],
+        sheetName: 'Estado de Stock'
+      };
+
+      this.descargarExcel(reporte);
+
+    } catch (error) {
+      console.error('Error generando reporte stock:', error);
+      alert('Error al generar el reporte de stock.');
+    } finally {
+      this.generandoExcel = false;
+    }
+  }
+
+  private async cargarDatosCompletos() {
+    const [movimientos, productos, proveedores, stockBajo] = await Promise.all([
+      this.movimientosService.getAll().toPromise(),
+      this.productosService.getAll().toPromise(),
+      this.proveedoresService.getAll().toPromise(),
+      this.movimientosService.getProductosStockBajo().toPromise()
+    ]);
+
+    this.todosMovimientos = movimientos?.data || [];
+    this.todosProductos = productos?.data || [];
+    this.todosProveedores = proveedores?.data || [];
+  }
+
+  private prepararDatosCompleto(): any[] {
+    const datos = [];
+
+    // Métricas generales
+    datos.push({
+      Tipo: 'Métrica',
+      Descripción: 'Total de Productos',
+      Valor: this.metrics.totalProductos,
+      Fecha: new Date().toLocaleDateString(),
+      Estado: 'ACTIVO'
+    });
+
+    datos.push({
+      Tipo: 'Métrica',
+      Descripción: 'Productos con Stock Bajo',
+      Valor: this.metrics.productosStockBajo,
+      Fecha: new Date().toLocaleDateString(),
+      Estado: this.metrics.productosStockBajo > 0 ? 'ALERTA' : 'NORMAL'
+    });
+
+    datos.push({
+      Tipo: 'Métrica',
+      Descripción: 'Movimientos Hoy',
+      Valor: this.metrics.movimientosHoy,
+      Fecha: new Date().toLocaleDateString(),
+      Estado: 'ACTIVO'
+    });
+
+    datos.push({
+      Tipo: 'Métrica',
+      Descripción: 'Total Proveedores',
+      Valor: this.metrics.totalProveedores,
+      Fecha: new Date().toLocaleDateString(),
+      Estado: 'ACTIVO'
+    });
+
+    // Alertas
+    this.alertasUrgentes.forEach(alerta => {
+      datos.push({
+        Tipo: 'Alerta',
+        Descripción: alerta.descripcion,
+        Valor: alerta.nivel.toUpperCase(),
+        Fecha: new Date().toLocaleDateString(),
+        Estado: 'PENDIENTE'
+      });
+    });
+
+    // Movimientos recientes
+    this.movimientosRecientes.forEach(mov => {
+      datos.push({
+        Tipo: 'Movimiento',
+        Descripción: `${mov.tipo} - ${mov.producto}`,
+        Valor: mov.cantidad,
+        Fecha: mov.fecha,
+        Estado: 'COMPLETADO'
+      });
+    });
+
+    return datos;
+  }
+
+  private prepararDatosMovimientos(movimientos: any[]): any[] {
+    return movimientos.map(mov => ({
+      ID: mov.id_movimiento,
+      Producto: mov.producto_nombre || 'N/A',
+      Tipo: mov.tipo,
+      Cantidad: mov.cantidad,
+      Fecha: new Date(mov.fecha).toLocaleDateString('es-ES'),
+      Usuario: mov.usuario_nombre || 'Sistema'
+    }));
+  }
+
+  private prepararDatosStock(productos: any[], stockBajo: any[]): any[] {
+    return productos.map(producto => {
+      const stockBajoInfo = stockBajo.find(sb => sb.id_producto === producto.id_producto);
+      
+      return {
+        Producto: producto.nombre,
+        Categoría: producto.categoria || 'Sin categoría',
+        'Stock Actual': producto.stock_actual || 0,
+        'Stock Mínimo': producto.stock_minimo || 0,
+        Estado: stockBajoInfo ? 'STOCK BAJO' : 'NORMAL',
+        'Última Actualización': new Date().toLocaleDateString('es-ES')
+      };
+    });
+  }
+
+  private descargarExcel(reporte: ExcelReport) {
+    // Crear workbook
+    const workbook = this.crearWorkbook(reporte);
+    
+    // Convertir a blob y descargar
+    const blob = new Blob([this.workbookToArrayBuffer(workbook)], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = reporte.filename;
+    link.click();
+    
+    window.URL.revokeObjectURL(url);
+  }
+
+  private crearWorkbook(reporte: ExcelReport): any {
+    // Esta es una implementación básica - en una app real usarías una librería como xlsx
+    const workbook = {
+      SheetNames: [reporte.sheetName],
+      Sheets: {
+        [reporte.sheetName]: this.crearHojaCalculo(reporte)
+      }
+    };
+    
+    return workbook;
+  }
+
+  private crearHojaCalculo(reporte: ExcelReport): any {
+    // Crear estructura básica de hoja de cálculo
+    const ws: { [key: string]: any } = {};
+    
+    // Agregar headers
+    reporte.headers.forEach((header: string, index: number) => {
+
+      const cellRef = this.numToCol(index) + '1';
+      ws[cellRef] = { v: header, t: 's' };
+    });
+    
+    // Agregar datos
+    reporte.data.forEach((fila: any, rowIndex: number) => {
+      Object.values(fila).forEach((valor: any, colIndex: number) => {
+    
+        const cellRef = this.numToCol(colIndex) + (rowIndex + 2);
+        ws[cellRef] = { v: valor, t: typeof valor === 'number' ? 'n' : 's' };
+      });
+    });
+    
+    return ws;
+  }
+
+  private workbookToArrayBuffer(workbook: any): ArrayBuffer {
+    // En una implementación real, usarías xlsx.write(workbook, { type: 'array' })
+    // Esta es una simulación básica
+    return new ArrayBuffer(1024);
+  }
+
+  private numToCol(num: number): string {
+    let col = '';
+    while (num >= 0) {
+      col = String.fromCharCode(65 + (num % 26)) + col;
+      num = Math.floor(num / 26) - 1;
+    }
+    return col;
+  }
+
+  private formatDateForFilename(): string {
+    const now = new Date();
+    return now.toISOString()
+      .replace(/[:.]/g, '-')
+      .replace('T', '_')
+      .split('Z')[0];
   }
 
   private async cargarMetricas() {

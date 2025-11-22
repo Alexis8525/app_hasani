@@ -47,77 +47,102 @@ export class UserModel {
     email: string,
     password: string,
     role: string,
-    phone: string
+    phone: string,
+    nombre?: string // Nuevo parámetro opcional para clientes
   ): Promise<{ user: IUser; offlinePin: string; qrCodeUrl: string }> {
     if (!email || !password || !role || !phone) {
       throw new Error('Email, contraseña, rol y teléfono son obligatorios');
     }
-
+  
     if (!this.validateEmail(email)) {
       throw new Error('Correo electrónico inválido o dominio no permitido');
     }
-
+  
     const existing = await this.findByEmail(email);
     if (existing) throw new Error('El correo ya existe');
-
+  
     if (!this.validatePasswordFormat(password)) {
       throw new Error(
         'Contraseña inválida. Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo.'
       );
     }
-
+  
     if (!this.validatePhone(phone)) {
       throw new Error('Teléfono inválido');
     }
-
+  
     // Generar PIN offline seguro (6 dígitos)
     const offlinePin = this.generateOfflinePin();
-
+  
     // Generar secreto para TOTP
     const secret = speakeasy.generateSecret({
       name: `OfflineAuth (${email})`,
       length: 20,
     });
-
+  
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insertar usuario
-    const result = await pool.query(
-      'INSERT INTO users (email, password, role, phone, offline_pin_secret) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, role, phone, created_at',
-      [email, hashedPassword, role, phone, secret.base32]
-    );
-
-    const user = result.rows[0];
-
-    // Generar QR Code con el PIN offline
-    const qrCodeData = {
-      userId: user.id,
-      email: user.email,
-      offlinePin: offlinePin,
-      type: 'offline_auth',
-      generatedAt: new Date().toISOString(),
-    };
-
-    const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrCodeData));
-
-    // Guardar el PIN offline en password_resets para acceso inmediato
-    await pool.query(
-      `INSERT INTO password_resets (user_id, token, type, offline_pin, expires_at) 
-       VALUES ($1, $2, $3, $4, $5)`,
-      [
-        user.id,
-        'initial_setup',
-        'offline_setup',
-        offlinePin,
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      ]
-    );
-
-    return {
-      user: user,
-      offlinePin: offlinePin,
-      qrCodeUrl: qrCodeUrl,
-    };
+  
+    // Usar transacción para asegurar consistencia
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+  
+      // Insertar usuario
+      const userResult = await client.query(
+        'INSERT INTO users (email, password, role, phone, offline_pin_secret) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, role, phone, created_at',
+        [email, hashedPassword, role, phone, secret.base32]
+      );
+  
+      const user = userResult.rows[0];
+  
+      // Si el rol es "cliente", crear registro en tabla clientes
+      if (role === 'cliente') {
+        const nombreCliente = nombre || email.split('@')[0]; // Usar nombre o parte del email
+        
+        await client.query(
+          'INSERT INTO clientes (id_user, nombre, telefono, contacto) VALUES ($1, $2, $3, $4)',
+          [user.id, nombreCliente, phone, email]
+        );
+      }
+  
+      // Generar QR Code con el PIN offline
+      const qrCodeData = {
+        userId: user.id,
+        email: user.email,
+        offlinePin: offlinePin,
+        type: 'offline_auth',
+        generatedAt: new Date().toISOString(),
+      };
+  
+      const qrCodeUrl = await QRCode.toDataURL(JSON.stringify(qrCodeData));
+  
+      // Guardar el PIN offline en password_resets para acceso inmediato
+      await client.query(
+        `INSERT INTO password_resets (user_id, token, type, offline_pin, expires_at) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          user.id,
+          'initial_setup',
+          'offline_setup',
+          offlinePin,
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        ]
+      );
+  
+      await client.query('COMMIT');
+  
+      return {
+        user: user,
+        offlinePin: offlinePin,
+        qrCodeUrl: qrCodeUrl,
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   static generateOfflinePin(): string {
@@ -228,7 +253,7 @@ export class UserModel {
 
   // ✅ AÑADE estas nuevas validaciones (sin duplicar)
   static validateRole(role: string): { valid: boolean; message?: string } {
-    const validRoles = ['admin', 'user', 'editor', 'lector', ];
+    const validRoles = ['admin', 'user', 'editor', 'lector', 'cliente'];
     if (!validRoles.includes(role))
       return { valid: false, message: `Rol inválido. Debe ser uno de: ${validRoles.join(', ')}` };
     return { valid: true };

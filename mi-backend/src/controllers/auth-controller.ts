@@ -460,4 +460,38 @@ export class AuthController {
       res.status(500).json({ message: 'Error renovando token', error: err.message });
     }
   }
+
+  // Agregar en AuthController
+// En controllers/auth.controller.ts - ya tienes el método, solo asegurar que esté bien
+  static async register(req: Request, res: Response) {
+    const { email, password, role, phone, nombre } = req.body;
+    
+    try {
+      const result = await UserModel.create(email, password, role, phone, nombre);
+      
+      return res.status(201).json({
+        message: 'Usuario registrado exitosamente',
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          phone: result.user.phone,
+          created_at: result.user.created_at
+        },
+        offlinePin: result.offlinePin,
+        qrCodeUrl: result.qrCodeUrl,
+        // Información adicional si es cliente
+        ...(role === 'cliente' && { 
+          clienteRegistrado: true,
+          mensaje: 'Perfil de cliente creado automáticamente'
+        })
+      });
+    } catch (err: any) {
+      console.error('Error en registro:', err);
+      return res.status(400).json({ 
+        message: err.message || 'Error en el registro',
+        code: 'REGISTRATION_ERROR'
+      });
+    }
+  }
 }

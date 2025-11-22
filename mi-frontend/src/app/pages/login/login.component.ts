@@ -1,6 +1,6 @@
 // login.component.ts - VERSION COMPLETA ACTUALIZADA
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService, LoginResponse, ActiveSession } from '../../core/services/auth.service';
@@ -10,7 +10,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TwoFactorComponent],
+  imports: [CommonModule, ReactiveFormsModule, TwoFactorComponent,RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
