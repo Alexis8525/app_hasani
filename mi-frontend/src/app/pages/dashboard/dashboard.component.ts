@@ -2,7 +2,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { MovimientosService, ProductoStockBajo } from '../../core/services/movimentos.service';
+import { MovimientosService, ProductoStockBajo } from '../../core/services/movimientos.service';
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
 import { firstValueFrom } from 'rxjs';
