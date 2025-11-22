@@ -1,17 +1,21 @@
-// src/routes/auth-routes.ts
+// routes/auth.routes.ts
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth-controller';
+import { EndpointValidators, ValidationMiddleware } from '../middleware/endpointValidators';
+import { GlobalValidationMiddleware } from '../middleware/globalValidation.middleware';
+import { authenticateToken } from '../middleware/auth.middleware';
 
-const router = Router();
+class AuthRoutes {
+  public router: Router = Router();
 
-router.post('/login', AuthController.login);
-router.post('/2fa/verify', AuthController.verify2FA); // si existe
-router.post('/verify-offline', AuthController.verifyOffline); // si existe
+  constructor() {
+    this.config();
+  }
 
-// simple test
-router.get('/test-login-simple', (_req, res) => {
-  res.json({ ok: true, message: 'auth route OK' });
-});
+  config() {
+    // Aplicar middleware global a todas las rutas de auth
+    this.router.use(ValidationMiddleware.sanitizeInput);
+    this.router.use(GlobalValidationMiddleware.validateJSONSyntax);
 
     // POST /auth/login - Login de usuario
     this.router.post('/login', EndpointValidators.validateLogin, AuthController.login);
@@ -65,11 +69,7 @@ router.get('/test-login-simple', (_req, res) => {
 
     this.router.post('/logout', authenticateToken, AuthController.logout);
     this.router.get('/sessions', authenticateToken, AuthController.getActiveSessions);
-    this.router.post(
-      '/sessions/logout-others',
-      authenticateToken,
-      AuthController.logoutOtherSessions
-    );
+    this.router.post('/sessions/logout-others', authenticateToken, AuthController.logoutOtherSessions);
     this.router.delete('/sessions/:sessionId', authenticateToken, AuthController.logoutSession);
     this.router.post('/refresh-token', authenticateToken, AuthController.refreshToken);
   }
@@ -77,4 +77,3 @@ router.get('/test-login-simple', (_req, res) => {
 
 const authRoutes = new AuthRoutes();
 export default authRoutes.router;
-
