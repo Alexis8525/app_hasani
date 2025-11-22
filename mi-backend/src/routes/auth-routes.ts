@@ -65,11 +65,7 @@ router.get('/test-login-simple', (_req, res) => {
 
     this.router.post('/logout', authenticateToken, AuthController.logout);
     this.router.get('/sessions', authenticateToken, AuthController.getActiveSessions);
-    this.router.post(
-      '/sessions/logout-others',
-      authenticateToken,
-      AuthController.logoutOtherSessions
-    );
+    this.router.post('/sessions/logout-others', authenticateToken, AuthController.logoutOtherSessions);
     this.router.delete('/sessions/:sessionId', authenticateToken, AuthController.logoutSession);
     this.router.post('/refresh-token', authenticateToken, AuthController.refreshToken);
   }

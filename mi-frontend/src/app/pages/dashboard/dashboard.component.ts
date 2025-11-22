@@ -6,6 +6,7 @@ import { MovimientosService, ProductoStockBajo } from '../../core/services/movim
 import { ProductosService } from '../../core/services/productos.service';
 import { ProveedoresService } from '../../core/services/proveedores.service';
 
+
 interface DashboardMetrics {
   totalProductos: number;
   productosStockBajo: number;
@@ -74,6 +75,10 @@ export class DashboardComponent implements OnInit {
   private readonly proveedoresService = inject(ProveedoresService);
   private readonly router = inject(Router);
 
+  private todosMovimientos: any[] = [];
+  private todosProductos: any[] = [];
+  private todosProveedores: any[] = [];
+
   // Datos del dashboard
   metrics: DashboardMetrics = {
     totalProductos: 0,
@@ -93,9 +98,7 @@ export class DashboardComponent implements OnInit {
   generandoExcel = false;
   showReportModal = false;
 
-  private todosMovimientos: any[] = [];
-  private todosProductos: any[] = [];
-  private todosProveedores: any[] = [];
+  
 
   // relaxed typing for product alerts; replace with ProductoStockBajo interface later
   productosStockBajo: any[] = [];
