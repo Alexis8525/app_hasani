@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { environment } from '../environments/environment';
 
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -16,7 +15,8 @@ import { environment } from '../environments/environment';
 })
 export class AppComponent {
   title = 'mi-frontend';
-}
-constructor() {
-  console.log('API URL = ', environment.apiUrl);
+
+  constructor() {
+    console.log('API URL = ', environment.apiUrl);
+  }
 }
