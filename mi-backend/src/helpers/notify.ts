@@ -11,6 +11,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // ESTE debe ser un dominio verificado en Resend
 const EMAIL_FROM = process.env.EMAIL_FROM || "gearssgt@gmail.com";
 
+console.log("🔑 RESEND_API_KEY:", JSON.stringify(process.env.RESEND_API_KEY));
+console.log("📧 EMAIL_FROM:", process.env.EMAIL_FROM);
+
+
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
     const response = await resend.emails.send({

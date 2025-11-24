@@ -201,18 +201,30 @@
 
         <div class="form-group">
           <label for="unidad">Unidad *</label>
-          <input
+          <select
             id="unidad"
-            type="text"
             formControlName="unidad"
             class="form-control"
             [class.is-invalid]="isFieldInvalid('unidad')"
-            placeholder="kg, litros, unidades, etc."
-          />
+            
+          >
+            <option value="" disabled selected>Seleccione una unidad</option>
+            <option value="kg">Kilogramos (kg)</option>
+            <option value="g">Gramos (g)</option>
+            <option value="l">Litros (l)</option>
+            <option value="ml">Mililitros (ml)</option>
+            <option value="unidades">Unidades</option>
+            <option value="piezas">Piezas</option>
+            <option value="cajas">Cajas</option>
+            <option value="metros">Metros (m)</option>
+            <option value="cm">Centímetros (cm)</option>
+          </select>
+        
           <div *ngIf="isFieldInvalid('unidad')" class="error-message">
             {{ getFieldError('unidad') }}
           </div>
         </div>
+        
       </div>
 
       <div class="form-row">
@@ -342,17 +354,30 @@
 
         <div class="form-group">
           <label for="edit-unidad">Unidad *</label>
-          <input
+          <option value="">Seleccionar categoría</option>
+          <select
             id="edit-unidad"
-            type="text"
             formControlName="unidad"
             class="form-control"
             [class.is-invalid]="isFieldInvalid('unidad')"
-          />
+          >
+            <option value="" disabled>Seleccione una unidad</option>
+            <option value="kg">Kilogramos (kg)</option>
+            <option value="g">Gramos (g)</option>
+            <option value="l">Litros (l)</option>
+            <option value="ml">Mililitros (ml)</option>
+            <option value="unidades">Unidades</option>
+            <option value="piezas">Piezas</option>
+            <option value="cajas">Cajas</option>
+            <option value="metros">Metros (m)</option>
+            <option value="cm">Centímetros (cm)</option>
+          </select>
+        
           <div *ngIf="isFieldInvalid('unidad')" class="error-message">
             {{ getFieldError('unidad') }}
           </div>
         </div>
+        
       </div>
 
       <div class="form-row">
