@@ -215,7 +215,7 @@ export class UserModel {
          role = COALESCE($2, role),
          password = COALESCE($3, password),
          phone = COALESCE($4, phone)
-         two_factor_enabled = COALESCE($5, two_factor_enabled)
+         two_factor_enabled = COALESCE($5, two_factor_enabled),
        WHERE email = $5
        RETURNING id, email, role, phone, two_factor_enabled, created_at`,
       [data.newEmail, data.role, hashedPassword, data.phone,data.two_factor_enabled, email]
