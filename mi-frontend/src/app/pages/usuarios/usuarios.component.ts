@@ -197,6 +197,8 @@ export class UsuariosComponent implements OnInit {
     if (this.usuarioForm.valid && this.selectedUser) {
       this.isLoading = true;
       const updateData = this.usuarioForm.value;
+
+      console.log('Datos a actualizar:', updateData);
       
       if (!updateData.password) {
         const { password, ...dataWithoutPassword } = updateData;

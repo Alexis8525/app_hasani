@@ -317,19 +317,31 @@ export class UserController {
   }
 
   static async updateUsuario(req: Request, res: Response) {
-    const { email } = req.params; // ahora pasamos email en URL
-    const { newEmail, role, password, phone } = req.body;
-
+    const { email } = req.params;
+    const { newEmail, role, password, phone, two_factor_enabled } = req.body;
+  
     try {
-      const user = await UserModel.updateUsuarioByEmail(email, { newEmail, role, password, phone });
-
+      const user = await UserModel.updateUsuarioByEmail(email, { 
+        newEmail, 
+        role, 
+        password, 
+        phone,
+        two_factor_enabled 
+      });
+  
       if (!user) return res.status(404).json({ code: 1, message: 'Usuario no encontrado' });
-
-      res.json({ code: 0, message: 'Usuario actualizado', user });
+  
+      res.json({ 
+        code: 0, 
+        message: 'Usuario actualizado', 
+        user 
+      });
     } catch (error: any) {
-      res
-        .status(500)
-        .json({ code: 1, message: 'Error al actualizar usuario', error: error.message });
+      res.status(500).json({ 
+        code: 1, 
+        message: 'Error al actualizar usuario', 
+        error: error.message 
+      });
     }
   }
 

@@ -170,12 +170,10 @@ export class UserModel {
       };
     return { valid: true };
   }
-
   static async getUsuarios(): Promise<IUser[]> {
     const result = await pool.query('SELECT id, email, created_at FROM users ORDER BY id ASC');
     return result.rows;
   }
-
   static async findByEmail(email: string): Promise<IUser | null> {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0] || null;
@@ -183,7 +181,7 @@ export class UserModel {
 
   static async updateUsuarioByEmail(
     email: string,
-    data: { newEmail?: string; role?: string; password?: string; phone?: string }
+    data: { newEmail?: string; role?: string; password?: string; phone?: string, two_factor_enabled?: boolean;}
   ): Promise<IUser | null> {
     const user = await this.findByEmail(email);
     if (!user) return null;
@@ -217,9 +215,10 @@ export class UserModel {
          role = COALESCE($2, role),
          password = COALESCE($3, password),
          phone = COALESCE($4, phone)
+         two_factor_enabled = COALESCE($5, two_factor_enabled)
        WHERE email = $5
-       RETURNING id, email, role, phone, created_at`,
-      [data.newEmail, data.role, hashedPassword, data.phone, email]
+       RETURNING id, email, role, phone, two_factor_enabled, created_at`,
+      [data.newEmail, data.role, hashedPassword, data.phone,data.two_factor_enabled, email]
     );
 
     return result.rows[0] || null;
@@ -250,7 +249,6 @@ export class UserModel {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0] || null;
   }
-
   // ✅ AÑADE estas nuevas validaciones (sin duplicar)
   static validateRole(role: string): { valid: boolean; message?: string } {
     const validRoles = ['admin', 'user', 'editor', 'lector', 'cliente'];
